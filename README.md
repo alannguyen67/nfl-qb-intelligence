@@ -88,7 +88,7 @@ nfl-qb-intelligence/
 
 ```bash
 # Clone the repo
-git clone https://github.com/YOUR_USERNAME/nfl-qb-intelligence.git
+git clone https://github.com/alannguyen67/nfl-qb-intelligence.git
 cd nfl-qb-intelligence
 
 # Create virtual environment
