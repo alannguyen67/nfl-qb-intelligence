@@ -1,0 +1,6 @@
+Metadata-Version: 2.4
+Name: nfl-qb-intelligence
+Version: 0.1.0
+Summary: NFL QB play style clustering and completion probability modeling
+License: MIT
+Requires-Python: >=3.11
