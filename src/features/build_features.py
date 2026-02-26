@@ -142,7 +142,6 @@ def compute_mobility_metrics(df: pd.DataFrame) -> pd.DataFrame:
     Features:
         - scramble_rate: (also in decisiveness, included for clustering)
         - scramble_yards_per_attempt: Avg yards gained on scrambles
-        - designed_rush_rate: Rate of designed QB runs (if distinguishable)
     """
     dropbacks = df[df["qb_dropback"] == 1]
 
@@ -160,6 +159,136 @@ def compute_mobility_metrics(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     return pd.concat([scramble_rate, scramble_yards], axis=1).fillna(0)
+
+
+def compute_rushing_epa_metrics(
+    pass_plays: pd.DataFrame,
+    rush_plays: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    """
+    Compute total QB rushing EPA per game (scrambles + designed runs).
+
+    Scramble EPA comes from pass plays (qb_scramble == 1).
+    Designed rush EPA comes from the separate rush plays table.
+    Per-game normalization prevents volume bias.
+
+    Features:
+        - rushing_epa_per_game: Total QB rushing EPA / games played
+        - rushing_yards_per_game: Total QB rushing yards / games played
+        - rush_attempts_per_game: Total QB rushes / games played (volume signal)
+    """
+    # Games played per QB
+    games_played = (
+        pass_plays.groupby("passer_player_id")["game_id"]
+        .nunique()
+        .rename("games_played")
+    )
+
+    # Scramble EPA (already in pass_plays when qb_scramble == 1)
+    scrambles = pass_plays[pass_plays["qb_scramble"] == 1]
+    scramble_epa = (
+        scrambles.groupby("passer_player_id")["epa"]
+        .sum()
+        .rename("scramble_epa_total")
+    )
+    scramble_yards = (
+        scrambles.groupby("passer_player_id")["yards_gained"]
+        .sum()
+        .rename("scramble_yards_total")
+    )
+    scramble_count = (
+        scrambles.groupby("passer_player_id").size()
+        .rename("scramble_count")
+    )
+
+    # Designed rush EPA (from rush_plays table)
+    if rush_plays is not None and len(rush_plays) > 0:
+        design_epa = (
+            rush_plays.groupby("rusher_player_id")["epa"]
+            .sum()
+            .rename("design_rush_epa_total")
+        )
+        design_yards = (
+            rush_plays.groupby("rusher_player_id")["yards_gained"]
+            .sum()
+            .rename("design_rush_yards_total")
+        )
+        design_count = (
+            rush_plays.groupby("rusher_player_id").size()
+            .rename("design_rush_count")
+        )
+    else:
+        idx = games_played.index
+        design_epa = pd.Series(0.0, index=idx, name="design_rush_epa_total")
+        design_yards = pd.Series(0.0, index=idx, name="design_rush_yards_total")
+        design_count = pd.Series(0, index=idx, name="design_rush_count")
+
+    result = pd.concat(
+        [games_played, scramble_epa, scramble_yards, scramble_count,
+         design_epa, design_yards, design_count],
+        axis=1,
+    ).fillna(0)
+
+    result["rushing_epa_per_game"] = (
+        (result["scramble_epa_total"] + result["design_rush_epa_total"])
+        / result["games_played"].replace(0, np.nan)
+    )
+    result["rushing_yards_per_game"] = (
+        (result["scramble_yards_total"] + result["design_rush_yards_total"])
+        / result["games_played"].replace(0, np.nan)
+    )
+    result["rush_attempts_per_game"] = (
+        (result["scramble_count"] + result["design_rush_count"])
+        / result["games_played"].replace(0, np.nan)
+    )
+
+    return result[["games_played", "rushing_epa_per_game", "rushing_yards_per_game", "rush_attempts_per_game"]].fillna(0)
+
+
+def compute_composite_rating(features: pd.DataFrame) -> pd.Series:
+    """
+    Weighted percentile-rank composite QB score (0–100).
+
+    Weights (must sum to 1.0):
+        avg_intended_epa      25%  — passing value per play
+        rushing_epa_per_game  12%  — dual-threat rushing value (per game)
+        clutch_epa            18%  — high-leverage performance
+        pressure_resilience   15%  — resilience under pressure
+        overall_comp_pct      10%  — raw completion accuracy
+        sack_rate             10%  — sack avoidance (lower = better, inverted)
+        comp_pct_deep         10%  — deep-ball accuracy
+
+    Each metric is converted to a 0–1 percentile rank before weighting,
+    so differences in scale don't distort the composite.
+    """
+    metric_weights = {
+        "avg_intended_epa":     (0.25, False),   # (weight, invert)
+        "rushing_epa_per_game": (0.12, False),
+        "clutch_epa":           (0.18, False),
+        "pressure_resilience":  (0.15, False),
+        "overall_comp_pct":     (0.10, False),
+        "sack_rate":            (0.10, True),     # lower sack rate = better
+        "comp_pct_deep":        (0.10, False),
+    }
+
+    composite = pd.Series(0.0, index=features.index)
+    applied_weight = 0.0
+
+    for metric, (weight, invert) in metric_weights.items():
+        if metric not in features.columns:
+            continue
+        col = features[metric].fillna(features[metric].median())
+        pct_rank = col.rank(pct=True)
+        if invert:
+            pct_rank = 1 - pct_rank
+        composite += weight * pct_rank
+        applied_weight += weight
+
+    # Rescale to 0–100 in case some metrics were missing
+    if applied_weight > 0:
+        composite = composite / applied_weight * 100
+
+    return composite.round(1)
 
 
 def compute_accuracy_profile(df: pd.DataFrame) -> pd.DataFrame:
@@ -198,16 +327,23 @@ def compute_accuracy_profile(df: pd.DataFrame) -> pd.DataFrame:
 # ──────────────────────────────────────────────────────────────────────
 
 
-def build_qb_features(pass_plays: pd.DataFrame) -> pd.DataFrame:
+def build_qb_features(
+    pass_plays: pd.DataFrame,
+    rush_plays: pd.DataFrame | None = None,
+) -> pd.DataFrame:
     """
     Build the full QB feature matrix by computing all metric groups
     and joining them together.
 
     Args:
         pass_plays: Cleaned play-level DataFrame (from load_data pipeline)
+        rush_plays: Optional designed QB rush plays (from load_data pipeline).
+                    If provided, rushing EPA is computed properly including
+                    both scrambles and designed runs.
 
     Returns:
-        DataFrame with one row per qualifying QB and all engineered features.
+        DataFrame with one row per qualifying QB and all engineered features,
+        including composite_rating (0–100) and badges like dynamic_runner.
     """
     logger.info("Building QB feature matrix...")
 
@@ -218,6 +354,7 @@ def build_qb_features(pass_plays: pd.DataFrame) -> pd.DataFrame:
     clutch = compute_clutch_metrics(pass_plays)
     mobility = compute_mobility_metrics(pass_plays)
     accuracy = compute_accuracy_profile(pass_plays)
+    rushing = compute_rushing_epa_metrics(pass_plays, rush_plays)
 
     # Get QB name mapping
     name_map = (
@@ -247,9 +384,25 @@ def build_qb_features(pass_plays: pd.DataFrame) -> pd.DataFrame:
         .join(clutch)
         .join(mobility)
         .join(accuracy)
+        .join(rushing)
     )
 
-    logger.info(f"Feature matrix: {features.shape[0]} QBs × {features.shape[1]} features")
+    # Clean NaNs before computing composite (fill numeric cols with median)
+    numeric_cols = features.select_dtypes(include="number").columns
+    features[numeric_cols] = features[numeric_cols].fillna(
+        features[numeric_cols].median()
+    )
+
+    # Composite rating (0–100) and badges
+    features["composite_rating"] = compute_composite_rating(features)
+
+    dynamic_runner_threshold = features["rushing_epa_per_game"].quantile(0.85)
+    features["dynamic_runner"] = features["rushing_epa_per_game"] >= dynamic_runner_threshold
+
+    logger.info(
+        f"Feature matrix: {features.shape[0]} QBs × {features.shape[1]} features | "
+        f"Dynamic runners: {features['dynamic_runner'].sum()}"
+    )
     return features
 
 

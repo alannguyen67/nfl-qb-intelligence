@@ -45,7 +45,7 @@ st.set_page_config(
 )
 
 st.title("🏈 NFL QB Intelligence")
-st.markdown("*Play style clustering & completion probability analysis — 2025 Season*")
+st.markdown("*Play style clustering & completion probability analysis — 2024-2026 seasons*")
 st.divider()
 
 
@@ -65,9 +65,17 @@ def load_data():
     return pd.read_parquet(data_path)
 
 
+@st.cache_data(show_spinner="Loading QB rush plays...")
+def load_rush_data():
+    rush_path = PROJECT_ROOT / "data" / "processed" / "qb_rush_plays_qualified.parquet"
+    if not rush_path.exists():
+        return None
+    return pd.read_parquet(rush_path)
+
+
 @st.cache_data(show_spinner="Engineering QB features...")
-def get_features(_pass_plays):
-    return build_qb_features(_pass_plays)
+def get_features(_pass_plays, _rush_plays):
+    return build_qb_features(_pass_plays, _rush_plays)
 
 
 @st.cache_data(show_spinner="Running clustering pipeline...")
@@ -87,7 +95,8 @@ def get_model(_pass_plays):
 # ──────────────────────────────────────────────────────────────────────
 
 pass_plays = load_data()
-features = get_features(pass_plays)
+rush_plays = load_rush_data()
+features = get_features(pass_plays, rush_plays)
 X_scaled, feature_cols = get_clustering_features(features)
 clustering_result = get_clusters(features, X_scaled, feature_cols)
 model_result, model_X = get_model(pass_plays)
@@ -106,7 +115,7 @@ features["cluster_name"] = features["cluster"].map(
 st.sidebar.header("Navigation")
 page = st.sidebar.radio(
     "Go to:",
-    ["📊 Overview", "🗺️ Cluster Map", "🆚 QB Compare", "🎯 CPOE Analysis", "🤖 Model Details"],
+    ["🏆 QB Rankings", "📊 Overview", "🗺️ Cluster Map", "🆚 QB Compare", "🎯 CPOE Analysis", "🤖 Model Details"],
 )
 
 
@@ -114,7 +123,63 @@ page = st.sidebar.radio(
 # Pages
 # ──────────────────────────────────────────────────────────────────────
 
-if page == "📊 Overview":
+if page == "🏆 QB Rankings":
+    st.subheader("QB Composite Rankings")
+    st.markdown(
+        "Weighted percentile-rank score across passing EPA, rushing EPA, clutch performance, "
+        "pressure resilience, accuracy, sack avoidance, and deep-ball efficiency."
+    )
+
+    # Build rankings table
+    ranking_cols = [
+        "player_name", "team", "games_played", "composite_rating",
+        "avg_intended_epa", "rushing_epa_per_game", "clutch_epa",
+        "overall_comp_pct", "sack_rate", "dynamic_runner", "cluster_name",
+    ]
+    available_ranking = [c for c in ranking_cols if c in features.columns]
+    rankings = features[available_ranking].copy().sort_values("composite_rating", ascending=False)
+    rankings.insert(0, "Rank", range(1, len(rankings) + 1))
+
+    # Format the dynamic runner badge as text
+    if "dynamic_runner" in rankings.columns:
+        rankings["dynamic_runner"] = rankings["dynamic_runner"].map(
+            {True: "⚡ Dynamic Runner", False: ""}
+        )
+
+    st.dataframe(
+        rankings.style.format({
+            "composite_rating": "{:.1f}",
+            "avg_intended_epa": "{:+.3f}",
+            "rushing_epa_per_game": "{:+.3f}",
+            "clutch_epa": "{:+.3f}",
+            "overall_comp_pct": "{:.1%}",
+            "sack_rate": "{:.1%}",
+        }, na_rep="—"),
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    # Highlight dual-threat QBs
+    dynamic_runners = features[features["dynamic_runner"] == True]["player_name"].tolist()
+    if dynamic_runners:
+        st.caption(f"⚡ Dynamic Runners (85th+ percentile rushing EPA): {', '.join(dynamic_runners)}")
+
+    # Weight legend
+    with st.expander("Rating weights"):
+        st.markdown("""
+| Metric | Weight | Direction |
+|---|---|---|
+| Passing EPA/play | 25% | Higher = better |
+| Rushing EPA/game | 12% | Higher = better |
+| Clutch EPA | 18% | Higher = better |
+| Pressure resilience | 15% | Higher = better |
+| Completion % | 10% | Higher = better |
+| Sack rate | 10% | **Lower = better** |
+| Deep ball comp % | 10% | Higher = better |
+        """)
+
+
+elif page == "📊 Overview":
     # KPI cards
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Qualifying QBs", len(features))
@@ -124,8 +189,8 @@ if page == "📊 Overview":
 
     st.subheader("QB Feature Summary")
     display_cols = [
-        "player_name", "team", "pass_attempts", "avg_air_yards",
-        "deep_ball_rate", "overall_comp_pct", "clutch_epa", "cluster_name",
+        "player_name", "team", "pass_attempts", "games_played", "avg_air_yards",
+        "deep_ball_rate", "overall_comp_pct", "rushing_epa_per_game", "clutch_epa", "cluster_name",
     ]
     available_display = [c for c in display_cols if c in features.columns]
     st.dataframe(
