@@ -1,447 +1,331 @@
-import { useState, useMemo } from "react";
-import QB_DATA_RAW from "./data/qb_data.json";
+import { useState } from "react";
+import qbData from "./data/qb_data.json";
 
-// ── NFL Team colors ──
+// ─── Badge Glossary ───
+const BADGE_GLOSSARY = {
+  "Dual Threat": { desc: "Elite rushing production (600+ rush yards). Creates explosive plays with both arm and legs.", color: "#10b981" },
+  "Mobile": { desc: "Meaningful rushing contributions (300+ rush yards). Extends plays and adds a run dimension.", color: "#34d399" },
+  "Gunslinger": { desc: "Top 20% in average air yards. Pushes the ball downfield aggressively.", color: "#f59e0b" },
+  "Aggressive": { desc: "Top 35% in average air yards. Willing to attack intermediate and deep zones.", color: "#fbbf24" },
+  "Accurate": { desc: "Top 25% in completion percentage over expected (CPOE). Consistently beats accuracy expectations.", color: "#3b82f6" },
+  "Clutch": { desc: "Top 20% in high-leverage EPA. Elevates performance when the game is on the line (win probability 20-80%).", color: "#8b5cf6" },
+  "Composed": { desc: "Top 25% in pressure resilience. Maintains production when the pocket collapses.", color: "#06b6d4" },
+  "Efficient": { desc: "Top 20% in throw EPA. Maximizes expected points on every pass attempt.", color: "#22c55e" },
+  "Dynamic Runner": { desc: "Top 15% in rushing EPA per game. Rushing ability is a true weapon, not just a scramble threat.", color: "#14b8a6" },
+  "Consistent": { desc: "Top 20% in positive play rate. High floor — produces positive outcomes on most throws.", color: "#60a5fa" },
+  "Pocket Passer": { desc: "Under 200 rush yards. Wins from the pocket with arm talent and processing.", color: "#94a3b8" },
+  "Volume": { desc: "7,000+ passing yards across the sample. Workhorse who shoulders a heavy passing load.", color: "#a78bfa" },
+  "Big Play": { desc: "Top 20% in yards per attempt. Creates chunk plays and explosive passing production.", color: "#fb923c" },
+  "Winner": { desc: "Top 20% in win percentage. Consistently leads teams to victories.", color: "#4ade80" },
+  "Inaccurate": { desc: "Bottom 20% in CPOE. Consistently misses throws that the average QB completes.", color: "#ef4444" },
+  "Turnover Prone": { desc: "Top 25% in interception rate. Puts the ball in danger too frequently.", color: "#dc2626" },
+  "Holds Ball": { desc: "Top 20% in sack rate. Doesn't get the ball out quickly enough or escape pressure.", color: "#f87171" },
+  "Conservative": { desc: "Bottom 20% in air yards and deep ball rate. Relies on short, safe throws that limit upside.", color: "#fb923c" },
+  "Struggling": { desc: "Bottom 20% in throw EPA. Producing well below league average on pass attempts.", color: "#ef4444" },
+  "Losing Record": { desc: "Bottom 20% in win percentage. Team results have been consistently poor.", color: "#b91c1c" },
+  "Inconsistent": { desc: "Top 25% in negative play rate. Too many plays that actively hurt the offense.", color: "#f97316" },
+  "Steady": { desc: "No standout traits in either direction. Adequate but unremarkable.", color: "#94a3b8" },
+  "Developing": { desc: "Young or limited sample. Still finding footing at the NFL level.", color: "#64748b" },
+};
+
 const TEAM_COLORS = {
-  KC: "#E31837", BUF: "#00338D", PHI: "#004C54", DET: "#0076B6",
-  SF: "#AA0000", BAL: "#241773", CIN: "#FB4F14", DAL: "#003594",
-  GB: "#203731", MIA: "#008E97", LAR: "#003594", MIN: "#4F2683",
-  SEA: "#002244", HOU: "#03202F", LAC: "#0080C6", PIT: "#FFB612",
-  TB: "#D50A0A", ATL: "#A71930", CHI: "#0B162A", NO: "#D3BC8D",
-  ARI: "#97233F", WAS: "#773141", NYJ: "#125740", NYG: "#0B2265",
-  IND: "#002C5F", DEN: "#FB4F14", CLE: "#311D00", LV: "#000000",
-  TEN: "#4B92DB", JAX: "#006778", NE: "#002244", CAR: "#0085CA",
+  ARI:"#97233F",ATL:"#A71930",BAL:"#241773",BUF:"#00338D",CAR:"#0085CA",CHI:"#0B162A",
+  CIN:"#FB4F14",CLE:"#311D00",DAL:"#003594",DEN:"#FB4F14",DET:"#0076B6",GB:"#203731",
+  HOU:"#03202F",IND:"#002C5F",JAX:"#006778",KC:"#E31837",LAC:"#0080C6",LAR:"#003594",
+  LV:"#000000",MIA:"#008E97",MIN:"#4F2683",NE:"#002244",NO:"#D3BC8D",NYG:"#0B2265",
+  NYJ:"#125740",PHI:"#004C54",PIT:"#FFB612",SEA:"#002244",SF:"#AA0000",TB:"#D50A0A",
+  TEN:"#0C2340",WAS:"#5A1414",
 };
 
-const TIER_CONFIG = {
-  "Elite": { color: "#F5C518", bg: "rgba(245,197,24,0.06)", border: "rgba(245,197,24,0.25)", icon: "★" },
-  "Blue Chip": { color: "#4ECDC4", bg: "rgba(78,205,196,0.06)", border: "rgba(78,205,196,0.2)", icon: "◆" },
-  "Quality Starter": { color: "#7B8CDE", bg: "rgba(123,140,222,0.06)", border: "rgba(123,140,222,0.15)", icon: "●" },
-  "Bridge / Backup": { color: "#8B8B8B", bg: "rgba(139,139,139,0.05)", border: "rgba(139,139,139,0.12)", icon: "○" },
-};
+const TIER_COLORS = { "Elite": "#f59e0b", "Blue Chip": "#3b82f6", "Quality Starter": "#22c55e", "Bridge / Backup": "#6b7280" };
+const TIER_ORDER = ["Elite", "Blue Chip", "Quality Starter", "Bridge / Backup"];
 
-const BADGE_COLORS = {
-  "Dual Threat": "#F5C518", "Clutch": "#E8453C", "Aggressive": "#FF6B35",
-  "Mobile": "#4ECDC4", "Efficient": "#2ECC71", "Playmaker": "#9B59B6",
-  "Gunslinger": "#E74C3C", "Creative": "#F39C12", "Accurate": "#3498DB",
-  "Pocket Passer": "#7B8CDE", "Composed": "#1ABC9C", "Rising": "#2ECC71",
-  "Volume": "#95A5A6", "Veteran": "#7F8C8D", "Game Manager": "#85929E",
-  "Steady": "#5DADE2", "Developing": "#F4D03F", "Quick Release": "#48C9B0",
-  "Inconsistent": "#E67E22", "Conservative": "#85929E", "Arm Talent": "#8E44AD",
-  "Fragile": "#C0392B", "Inaccurate": "#E74C3C", "Turnover Prone": "#C0392B",
-  "Declining": "#7F8C8D", "Undersized": "#BDC3C7", "Holds Ball": "#E67E22",
-  "Struggling": "#C0392B",
-};
+const fmtEpa = (v) => (v > 0 ? "+" : "") + v.toFixed(3);
+const fmtPct = (v) => v.toFixed(1) + "%";
+const fmtCpoe = (v) => (v > 0 ? "+" : "") + v.toFixed(1);
 
-const STAT_COLUMNS = [
-  { key: "rank", label: "#", w: "48px" },
-  { key: "name", label: "QUARTERBACK", w: "180px" },
-  { key: "team", label: "TM", w: "56px" },
-  { key: "rating", label: "RTG", w: "64px", highlight: true },
-  { key: "epa", label: "EPA/PLAY", w: "90px", format: v => v > 0 ? `+${v.toFixed(3)}` : v.toFixed(3), colorScale: true },
-  { key: "cpoe", label: "CPOE", w: "72px", format: v => v > 0 ? `+${v.toFixed(1)}` : v.toFixed(1), colorScale: true },
-  { key: "compPct", label: "CMP%", w: "72px", format: v => v.toFixed(1) },
-  { key: "passYds", label: "YDS", w: "72px", format: v => v.toLocaleString() },
-  { key: "passTd", label: "TD", w: "56px" },
-  { key: "int", label: "INT", w: "56px", invertColor: true },
-  { key: "sackRate", label: "SK%", w: "64px", format: v => v.toFixed(1), invertColor: true },
-  { key: "rushYds", label: "RUSH", w: "72px" },
-  { key: "rushTd", label: "RTD", w: "56px" },
-];
-
-function getStatColor(key, value, allValues, invert = false) {
-  if (!allValues || allValues.length === 0) return "#C8CCD0";
-  const min = Math.min(...allValues);
-  const max = Math.max(...allValues);
-  if (max === min) return "#C8CCD0";
-  let pct = (value - min) / (max - min);
-  if (invert) pct = 1 - pct;
-  if (pct > 0.75) return "#2ECC71";
-  if (pct > 0.5) return "#7DCEA0";
-  if (pct > 0.25) return "#E67E22";
-  return "#E74C3C";
-}
-
-function Badge({ label }) {
-  const color = BADGE_COLORS[label] || "#7B8CDE";
+function Badge({ name, onClick }) {
+  const info = BADGE_GLOSSARY[name] || { color: "#64748b" };
   return (
-    <span style={{
-      display: "inline-block",
-      padding: "2px 8px",
-      borderRadius: "3px",
-      fontSize: "10px",
-      fontWeight: 600,
-      letterSpacing: "0.5px",
-      textTransform: "uppercase",
-      color: color,
-      background: `${color}18`,
-      border: `1px solid ${color}35`,
-      marginRight: "5px",
-      marginBottom: "3px",
-      fontFamily: "'JetBrains Mono', monospace",
-    }}>
-      {label}
-    </span>
+    <span onClick={onClick} style={{
+      display: "inline-block", padding: "3px 10px", borderRadius: 12, fontSize: 11, fontWeight: 600,
+      fontFamily: "'JetBrains Mono', monospace", background: info.color + "22", color: info.color,
+      border: `1px solid ${info.color}44`, cursor: "pointer", transition: "all 0.2s", letterSpacing: "0.3px",
+    }} title={info.desc}>{name}</span>
   );
 }
 
-function QBCard({ qb, index }) {
-  const tierCfg = TIER_CONFIG[qb.tier] || TIER_CONFIG["Quality Starter"];
-  const teamColor = TEAM_COLORS[qb.team] || "#666";
-  const [hovered, setHovered] = useState(false);
-
+function RatingCircle({ rating, size = 52 }) {
+  const pct = (rating - 40) / 59;
+  const color = pct > 0.8 ? "#f59e0b" : pct > 0.6 ? "#3b82f6" : pct > 0.35 ? "#22c55e" : "#6b7280";
+  const circ = 2 * Math.PI * (size / 2 - 4);
   return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        background: hovered ? "rgba(255,255,255,0.04)" : tierCfg.bg,
-        border: `1px solid ${hovered ? tierCfg.color + "50" : tierCfg.border}`,
-        borderRadius: "8px",
-        padding: "20px 24px",
-        display: "flex",
-        alignItems: "center",
-        gap: "20px",
-        transition: "all 0.25s ease",
-        cursor: "default",
-        position: "relative",
-        overflow: "hidden",
-        animation: `fadeSlideIn 0.4s ease ${index * 0.04}s both`,
-      }}
-    >
-      <div style={{ minWidth: "44px", textAlign: "center" }}>
-        <div style={{
-          fontSize: "28px", fontWeight: 800, color: tierCfg.color,
-          fontFamily: "'Outfit', sans-serif", lineHeight: 1,
-        }}>{qb.rank}</div>
+    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+        <circle cx={size/2} cy={size/2} r={size/2-4} fill="none" stroke="#1e293b" strokeWidth={3} />
+        <circle cx={size/2} cy={size/2} r={size/2-4} fill="none" stroke={color} strokeWidth={3}
+          strokeDasharray={circ} strokeDashoffset={circ * (1 - pct)} strokeLinecap="round"
+          style={{ transition: "stroke-dashoffset 0.8s ease" }} />
+      </svg>
+      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
+        fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: size * 0.36, color }}>{rating}</div>
+    </div>
+  );
+}
+
+function StatBar({ label, value, format = "epa", min = -0.3, max = 0.3 }) {
+  const formatted = format === "pct" ? fmtPct(value) : format === "cpoe" ? fmtCpoe(value) : fmtEpa(value);
+  const pct = Math.max(0, Math.min(1, (value - min) / (max - min)));
+  const color = pct > 0.65 ? "#22c55e" : pct > 0.4 ? "#f59e0b" : "#ef4444";
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#94a3b8", marginBottom: 3 }}>
+        <span>{label}</span>
+        <span style={{ fontFamily: "'JetBrains Mono', monospace", color }}>{formatted}</span>
       </div>
+      <div style={{ height: 4, background: "#1e293b", borderRadius: 2 }}>
+        <div style={{ height: "100%", width: `${pct * 100}%`, background: color, borderRadius: 2, transition: "width 0.5s ease" }} />
+      </div>
+    </div>
+  );
+}
 
-      <div style={{
-        width: "3px", height: "52px",
-        background: `linear-gradient(to bottom, ${teamColor}, ${teamColor}44)`,
-        borderRadius: "2px", flexShrink: 0,
-      }} />
-
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: "10px", marginBottom: "4px", flexWrap: "wrap" }}>
-          <span style={{
-            fontSize: "18px", fontWeight: 700, color: "#E8EAED",
-            fontFamily: "'Outfit', sans-serif", letterSpacing: "-0.02em",
-          }}>{qb.name}</span>
-          <span style={{
-            fontSize: "11px", fontWeight: 700, color: teamColor,
-            background: `${teamColor}20`, padding: "1px 6px", borderRadius: "3px",
-            fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.5px",
-          }}>{qb.team}</span>
-          <span style={{
-            fontSize: "10px", fontWeight: 500, color: tierCfg.color, opacity: 0.7,
-            fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.5px", textTransform: "uppercase",
-          }}>{tierCfg.icon} {qb.tier}</span>
+function QBProfile({ qb }) {
+  return (
+    <div style={{ padding: "20px 24px", background: "#0d1321", borderTop: "1px solid #1e293b", animation: "slideDown 0.3s ease" }}>
+      <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, minWidth: 120 }}>
+          {qb.headshotUrl ? (
+            <img src={qb.headshotUrl} alt={qb.name} style={{
+              width: 120, height: 87, objectFit: "cover", borderRadius: 8,
+              border: `2px solid ${TEAM_COLORS[qb.team] || "#333"}`, background: "#0a0e14",
+            }} onError={(e) => { e.target.style.display = "none"; }} />
+          ) : (
+            <div style={{ width: 120, height: 87, borderRadius: 8, background: "#1e293b",
+              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, color: "#475569" }}>🏈</div>
+          )}
+          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, color: "#94a3b8" }}>
+            {qb.wins}-{qb.losses} ({fmtPct(qb.winPct)})
+          </div>
+          <div style={{ fontSize: 11, color: "#64748b" }}>{qb.seasons}</div>
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "2px" }}>
-          {(qb.badges || []).map(b => <Badge key={b} label={b} />)}
+
+        <div style={{ flex: 1, minWidth: 250 }}>
+          <p style={{ color: "#cbd5e1", fontSize: 13, lineHeight: 1.7, margin: "0 0 16px 0", fontFamily: "'Outfit', sans-serif" }}>
+            {qb.description}
+          </p>
+        </div>
+
+        <div style={{ minWidth: 220, flex: "0 0 220px" }}>
+          <StatBar label="Throw EPA" value={qb.throwEpa} min={-0.1} max={0.35} />
+          <StatBar label="Pressure Resilience" value={qb.pressureResilience} min={-0.75} max={-0.1} />
+          <StatBar label="High-Leverage EPA" value={qb.highLeverageEpa} min={-0.15} max={0.3} />
+          <StatBar label="Rush EPA/Game" value={qb.rushEpaPerGame} min={-1.0} max={1.5} />
+          <StatBar label="CPOE" value={qb.cpoe} format="cpoe" min={-5} max={8} />
+          <StatBar label="YPA" value={qb.ypa} format="cpoe" min={5} max={9} />
+        </div>
+
+        <div style={{ minWidth: 160 }}>
+          <div style={{ fontSize: 11, color: "#64748b", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Totals</div>
+          {[["Pass Yards", qb.passYds.toLocaleString()], ["Pass TD", qb.passTd], ["INT", qb.int],
+            ["Rush Yards", qb.rushYds.toLocaleString()], ["Rush TD", qb.rushTd],
+            ["Sack Rate", fmtPct(qb.sackRate)], ["Comp %", fmtPct(qb.compPct)], ["GWD", qb.gwd],
+          ].map(([label, val]) => (
+            <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0",
+              borderBottom: "1px solid #1e293b15", fontSize: 12 }}>
+              <span style={{ color: "#64748b" }}>{label}</span>
+              <span style={{ color: "#e2e8f0", fontFamily: "'JetBrains Mono', monospace" }}>{val}</span>
+            </div>
+          ))}
         </div>
       </div>
+    </div>
+  );
+}
 
-      <div style={{ display: "flex", gap: "20px", flexShrink: 0, flexWrap: "wrap" }}>
-        {[
-          { label: "EPA/PLAY", value: qb.epa > 0 ? `+${qb.epa.toFixed(3)}` : qb.epa.toFixed(3), color: qb.epa > 0.1 ? "#2ECC71" : qb.epa > 0 ? "#7DCEA0" : "#E74C3C" },
-          { label: "CPOE", value: qb.cpoe > 0 ? `+${qb.cpoe.toFixed(1)}` : qb.cpoe.toFixed(1), color: qb.cpoe > 1 ? "#2ECC71" : qb.cpoe > 0 ? "#7DCEA0" : "#E74C3C" },
-          { label: "CMP%", value: qb.compPct.toFixed(1), color: qb.compPct > 66 ? "#2ECC71" : qb.compPct > 62 ? "#7DCEA0" : "#E74C3C" },
-          { label: "TD:INT", value: `${qb.passTd}:${qb.int}`, color: (qb.passTd / Math.max(qb.int, 1)) > 2.5 ? "#2ECC71" : "#C8CCD0" },
-        ].map(s => (
-          <div key={s.label} style={{ textAlign: "center", minWidth: "56px" }}>
-            <div style={{
-              fontSize: "15px", fontWeight: 700, color: s.color,
-              fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.2,
-            }}>{s.value}</div>
-            <div style={{
-              fontSize: "9px", color: "#6B7280", fontWeight: 600,
-              letterSpacing: "0.8px", fontFamily: "'JetBrains Mono', monospace", marginTop: "2px",
-            }}>{s.label}</div>
+function QBCard({ qb, isExpanded, onToggle, onBadgeClick }) {
+  const teamColor = TEAM_COLORS[qb.team] || "#333";
+  return (
+    <div style={{ background: "#111827", borderRadius: 10, overflow: "hidden",
+      borderLeft: `3px solid ${teamColor}`, transition: "all 0.2s", marginBottom: 2 }}>
+      <div onClick={onToggle} style={{ display: "flex", alignItems: "center", gap: 16,
+        padding: "14px 20px", cursor: "pointer", transition: "background 0.15s" }}
+        onMouseEnter={(e) => e.currentTarget.style.background = "#1e293b44"}
+        onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
+        <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 14, fontWeight: 700,
+          color: "#64748b", width: 28, textAlign: "right", flexShrink: 0 }}>{qb.rank}</div>
+        {qb.headshotUrl ? (
+          <img src={qb.headshotUrl} alt="" style={{ width: 36, height: 36, borderRadius: "50%",
+            objectFit: "cover", border: `2px solid ${teamColor}`, flexShrink: 0, background: "#0a0e14" }}
+            onError={(e) => { e.target.style.display = "none"; }} />
+        ) : (
+          <div style={{ width: 36, height: 36, borderRadius: "50%", background: teamColor + "33",
+            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14,
+            flexShrink: 0, color: teamColor, fontWeight: 700 }}>{qb.team}</div>
+        )}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 700, fontSize: 15, color: "#f1f5f9",
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {qb.name}
+            <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 500, color: teamColor, opacity: 0.8 }}>{qb.team}</span>
+          </div>
+          <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+            {qb.badges.map((b) => <Badge key={b} name={b} onClick={(e) => { e.stopPropagation(); onBadgeClick(b); }} />)}
+          </div>
+        </div>
+        <div style={{ textAlign: "right", marginRight: 8, fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>
+          <div style={{ color: qb.throwEpa > 0.2 ? "#22c55e" : qb.throwEpa > 0.1 ? "#f59e0b" : "#ef4444" }}>
+            {fmtEpa(qb.throwEpa)} EPA
+          </div>
+          <div style={{ color: "#64748b", fontSize: 11 }}>{qb.wins}-{qb.losses}</div>
+        </div>
+        <RatingCircle rating={qb.rating} size={48} />
+        <div style={{ color: "#475569", fontSize: 18, transition: "transform 0.2s",
+          transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}>▾</div>
+      </div>
+      {isExpanded && <QBProfile qb={qb} />}
+    </div>
+  );
+}
+
+function GlossaryModal({ badge, onClose }) {
+  if (!badge) return null;
+  const info = BADGE_GLOSSARY[badge];
+  if (!info) return null;
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)",
+      backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: "#111827", borderRadius: 12,
+        padding: 28, maxWidth: 420, width: "90%", border: `1px solid ${info.color}44`,
+        boxShadow: `0 0 40px ${info.color}22` }}>
+        <span style={{ padding: "4px 14px", borderRadius: 16, fontSize: 14, fontWeight: 700,
+          background: info.color + "22", color: info.color, border: `1px solid ${info.color}44`,
+          fontFamily: "'JetBrains Mono', monospace" }}>{badge}</span>
+        <p style={{ color: "#cbd5e1", fontSize: 14, lineHeight: 1.7, margin: "16px 0 0",
+          fontFamily: "'Outfit', sans-serif" }}>{info.desc}</p>
+        <button onClick={onClose} style={{ marginTop: 20, padding: "8px 20px", background: "#1e293b",
+          border: "1px solid #334155", borderRadius: 8, color: "#94a3b8", fontSize: 13,
+          cursor: "pointer", fontFamily: "'Outfit', sans-serif" }}>Got it</button>
+      </div>
+    </div>
+  );
+}
+
+function FullGlossary({ onBadgeClick }) {
+  const neg = ["Inaccurate","Turnover Prone","Holds Ball","Conservative","Struggling","Losing Record","Inconsistent"];
+  const positive = Object.entries(BADGE_GLOSSARY).filter(([k]) => !neg.includes(k));
+  const negative = Object.entries(BADGE_GLOSSARY).filter(([k]) => neg.includes(k));
+  const Section = ({ title, items }) => (
+    <div style={{ marginBottom: 24 }}>
+      <h3 style={{ fontFamily: "'Outfit', sans-serif", fontSize: 14, color: "#94a3b8",
+        textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 12 }}>{title}</h3>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 8 }}>
+        {items.map(([name, info]) => (
+          <div key={name} onClick={() => onBadgeClick(name)} style={{
+            padding: "10px 14px", background: "#111827", borderRadius: 8,
+            border: `1px solid ${info.color}22`, cursor: "pointer", transition: "border-color 0.2s" }}
+            onMouseEnter={(e) => e.currentTarget.style.borderColor = info.color + "66"}
+            onMouseLeave={(e) => e.currentTarget.style.borderColor = info.color + "22"}>
+            <span style={{ padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 600,
+              background: info.color + "22", color: info.color, fontFamily: "'JetBrains Mono', monospace" }}>{name}</span>
+            <div style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.5, marginTop: 6,
+              fontFamily: "'Outfit', sans-serif" }}>{info.desc}</div>
           </div>
         ))}
       </div>
-
-      <div style={{
-        width: "48px", height: "48px", borderRadius: "50%",
-        border: `2px solid ${tierCfg.color}60`,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        flexShrink: 0, background: `${tierCfg.color}10`,
-      }}>
-        <span style={{
-          fontSize: "16px", fontWeight: 800, color: tierCfg.color,
-          fontFamily: "'Outfit', sans-serif",
-        }}>{qb.rating}</span>
-      </div>
     </div>
   );
-}
-
-function StatsTable({ data, sortKey, sortDir, onSort }) {
-  const allValues = useMemo(() => {
-    const vals = {};
-    STAT_COLUMNS.forEach(col => {
-      if (col.colorScale || col.invertColor) {
-        vals[col.key] = data.map(qb => qb[col.key]);
-      }
-    });
-    return vals;
-  }, [data]);
-
-  return (
-    <div style={{
-      overflowX: "auto", borderRadius: "8px",
-      border: "1px solid rgba(255,255,255,0.06)",
-    }}>
-      <table style={{
-        width: "100%", borderCollapse: "collapse",
-        fontFamily: "'JetBrains Mono', monospace", fontSize: "12px",
-      }}>
-        <thead>
-          <tr>
-            {STAT_COLUMNS.map(col => (
-              <th key={col.key} onClick={() => onSort(col.key)} style={{
-                padding: "12px 10px",
-                textAlign: col.key === "name" ? "left" : "center",
-                color: sortKey === col.key ? "#F5C518" : "#6B7280",
-                fontSize: "10px", fontWeight: 700, letterSpacing: "1px",
-                borderBottom: "1px solid rgba(255,255,255,0.08)",
-                cursor: "pointer", userSelect: "none",
-                background: "rgba(0,0,0,0.3)", position: "sticky", top: 0,
-                whiteSpace: "nowrap", transition: "color 0.2s", width: col.w,
-              }}>
-                {col.label}
-                {sortKey === col.key && (
-                  <span style={{ marginLeft: "4px", fontSize: "8px" }}>
-                    {sortDir === "asc" ? "▲" : "▼"}
-                  </span>
-                )}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((qb) => (
-            <tr key={qb.name} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)", transition: "background 0.15s" }}
-              onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.03)"}
-              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-            >
-              {STAT_COLUMNS.map(col => {
-                const val = qb[col.key];
-                const formatted = col.format ? col.format(val) : val;
-                let color = "#C8CCD0";
-                if (col.colorScale) color = getStatColor(col.key, val, allValues[col.key]);
-                if (col.invertColor) color = getStatColor(col.key, val, allValues[col.key], true);
-                if (col.key === "name") color = "#E8EAED";
-                if (col.key === "rank") color = "#6B7280";
-                if (col.key === "team") color = TEAM_COLORS[val] || "#888";
-
-                return (
-                  <td key={col.key} style={{
-                    padding: "10px 10px",
-                    textAlign: col.key === "name" ? "left" : "center",
-                    color, fontWeight: col.highlight ? 800 : (col.key === "name" ? 600 : 400),
-                    fontSize: col.highlight ? "13px" : "12px",
-                    fontFamily: col.key === "name" ? "'Outfit', sans-serif" : "'JetBrains Mono', monospace",
-                  }}>
-                    {col.key === "rating" ? (
-                      <span style={{
-                        background: `${TIER_CONFIG[qb.tier]?.color || "#888"}20`,
-                        padding: "2px 8px", borderRadius: "4px",
-                        color: TIER_CONFIG[qb.tier]?.color || "#888",
-                      }}>{formatted}</span>
-                    ) : formatted}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+  return <div><Section title="Positive Archetypes" items={positive} /><Section title="Negative Flags" items={negative} /></div>;
 }
 
 export default function App() {
+  const [expandedQb, setExpandedQb] = useState(null);
+  const [selectedBadge, setSelectedBadge] = useState(null);
   const [view, setView] = useState("rankings");
   const [tierFilter, setTierFilter] = useState("All");
-  const [sortKey, setSortKey] = useState("rank");
-  const [sortDir, setSortDir] = useState("asc");
 
-  const tiers = ["All", "Elite", "Blue Chip", "Quality Starter", "Bridge / Backup"];
-
-  const filteredData = useMemo(() => {
-    let d = [...QB_DATA_RAW];
-    if (tierFilter !== "All") d = d.filter(qb => qb.tier === tierFilter);
-    return d;
-  }, [tierFilter]);
-
-  const sortedTableData = useMemo(() => {
-    let d = [...filteredData];
-    d.sort((a, b) => {
-      const av = a[sortKey], bv = b[sortKey];
-      if (typeof av === "string") return sortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
-      return sortDir === "asc" ? av - bv : bv - av;
-    });
-    return d;
-  }, [filteredData, sortKey, sortDir]);
-
-  function handleSort(key) {
-    if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
-    else { setSortKey(key); setSortDir(key === "name" || key === "team" ? "asc" : "desc"); }
+  const filtered = tierFilter === "All" ? qbData : qbData.filter((q) => q.tier === tierFilter);
+  const grouped = {};
+  for (const tier of TIER_ORDER) {
+    const tqbs = filtered.filter((q) => q.tier === tier);
+    if (tqbs.length > 0) grouped[tier] = tqbs;
   }
 
-  const tierGroups = useMemo(() => {
-    const groups = {};
-    filteredData.forEach(qb => {
-      if (!groups[qb.tier]) groups[qb.tier] = [];
-      groups[qb.tier].push(qb);
-    });
-    return groups;
-  }, [filteredData]);
-
   return (
-    <div style={{
-      minHeight: "100vh", background: "#0A0E14", color: "#C8CCD0",
-      fontFamily: "'Outfit', sans-serif",
-    }}>
+    <div style={{ minHeight: "100vh", background: "#0a0e14", color: "#e2e8f0", fontFamily: "'Outfit', sans-serif" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
-        @keyframes fadeSlideIn {
-          from { opacity: 0; transform: translateY(12px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes slideDown { from { opacity: 0; max-height: 0; } to { opacity: 1; max-height: 600px; } }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        ::-webkit-scrollbar { height: 6px; width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+        body { background: #0a0e14; }
+        ::selection { background: #f59e0b44; }
       `}</style>
 
-      <header style={{
-        borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "0 40px",
-        background: "rgba(10,14,20,0.95)", backdropFilter: "blur(12px)",
-        position: "sticky", top: 0, zIndex: 100,
-      }}>
-        <div style={{
-          maxWidth: "1200px", margin: "0 auto", display: "flex",
-          alignItems: "center", justifyContent: "space-between", height: "64px",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <div style={{ fontSize: "20px", fontWeight: 900, letterSpacing: "-0.03em", color: "#E8EAED" }}>
-              <span style={{ color: "#F5C518" }}>QB</span> Intelligence
-            </div>
-            <div style={{
-              fontSize: "10px", color: "#4B5563", fontFamily: "'JetBrains Mono', monospace",
-              letterSpacing: "1px", fontWeight: 500,
-              borderLeft: "1px solid rgba(255,255,255,0.08)", paddingLeft: "16px",
-            }}>
-              2025 SEASON — ADVANCED ANALYTICS
-            </div>
+      <header style={{ padding: "32px 40px 24px", borderBottom: "1px solid #1e293b",
+        background: "linear-gradient(180deg, #111827 0%, #0a0e14 100%)" }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 4 }}>
+            <h1 style={{ fontSize: 28, fontWeight: 900, letterSpacing: "-0.5px",
+              background: "linear-gradient(135deg, #f59e0b, #ef4444)",
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>QB Intelligence</h1>
+            <span style={{ color: "#475569", fontSize: 13, fontFamily: "'JetBrains Mono', monospace" }}>
+              v2.0 — Two-Pillar Rating</span>
           </div>
-
-          <div style={{ display: "flex", gap: "4px", background: "rgba(255,255,255,0.04)", borderRadius: "6px", padding: "3px" }}>
-            {[{ id: "rankings", label: "Rankings" }, { id: "stats", label: "Stats Table" }].map(tab => (
-              <button key={tab.id} onClick={() => setView(tab.id)} style={{
-                padding: "6px 16px", borderRadius: "4px", border: "none", cursor: "pointer",
-                fontSize: "12px", fontWeight: 600, fontFamily: "'Outfit', sans-serif",
-                letterSpacing: "0.02em", transition: "all 0.2s",
-                color: view === tab.id ? "#0A0E14" : "#6B7280",
-                background: view === tab.id ? "#F5C518" : "transparent",
-              }}>{tab.label}</button>
+          <p style={{ color: "#64748b", fontSize: 13, marginBottom: 20 }}>
+            2024–2025 blended · {qbData.length} quarterbacks · Click any QB to expand their profile</p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            {["rankings", "glossary"].map((v) => (
+              <button key={v} onClick={() => setView(v)} style={{
+                padding: "6px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+                background: view === v ? "#f59e0b22" : "transparent",
+                color: view === v ? "#f59e0b" : "#64748b",
+                border: view === v ? "1px solid #f59e0b44" : "1px solid transparent",
+                cursor: "pointer", textTransform: "capitalize", fontFamily: "'Outfit', sans-serif",
+              }}>{v === "glossary" ? "Badge Glossary" : v}</button>
             ))}
+            {view === "rankings" && (
+              <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+                {["All", ...TIER_ORDER].map((t) => (
+                  <button key={t} onClick={() => setTierFilter(t)} style={{
+                    padding: "4px 12px", borderRadius: 6, fontSize: 11, fontWeight: 600,
+                    background: tierFilter === t ? (TIER_COLORS[t] || "#475569") + "22" : "transparent",
+                    color: tierFilter === t ? (TIER_COLORS[t] || "#94a3b8") : "#475569",
+                    border: `1px solid ${tierFilter === t ? (TIER_COLORS[t] || "#475569") + "44" : "transparent"}`,
+                    cursor: "pointer", fontFamily: "'JetBrains Mono', monospace",
+                  }}>{t}</button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </header>
 
-      <main style={{ maxWidth: "1200px", margin: "0 auto", padding: "32px 40px 80px" }}>
-        <div style={{ display: "flex", gap: "8px", marginBottom: "28px", flexWrap: "wrap" }}>
-          {tiers.map(t => {
-            const active = tierFilter === t;
-            const cfg = TIER_CONFIG[t];
-            const color = cfg?.color || "#C8CCD0";
-            return (
-              <button key={t} onClick={() => setTierFilter(t)} style={{
-                padding: "5px 14px", borderRadius: "20px",
-                border: `1px solid ${active ? color : "rgba(255,255,255,0.08)"}`,
-                background: active ? `${color}15` : "transparent",
-                color: active ? color : "#6B7280",
-                fontSize: "11px", fontWeight: 600, cursor: "pointer",
-                fontFamily: "'Outfit', sans-serif", letterSpacing: "0.02em", transition: "all 0.2s",
-              }}>
-                {t !== "All" && cfg && <span style={{ marginRight: "5px" }}>{cfg.icon}</span>}
-                {t}
-                {t !== "All" && (
-                  <span style={{ marginLeft: "6px", fontSize: "10px", opacity: 0.6, fontFamily: "'JetBrains Mono', monospace" }}>
-                    {QB_DATA_RAW.filter(qb => qb.tier === t).length}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {view === "rankings" && (
-          <div>
-            {tierFilter === "All" ? (
-              Object.entries(TIER_CONFIG).map(([tier, cfg]) => {
-                const qbs = tierGroups[tier];
-                if (!qbs || qbs.length === 0) return null;
-                return (
-                  <div key={tier} style={{ marginBottom: "36px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px" }}>
-                      <span style={{ fontSize: "16px", color: cfg.color }}>{cfg.icon}</span>
-                      <h2 style={{
-                        fontSize: "14px", fontWeight: 700, color: cfg.color,
-                        letterSpacing: "1.5px", textTransform: "uppercase",
-                        fontFamily: "'JetBrains Mono', monospace",
-                      }}>{tier}</h2>
-                      <div style={{ flex: 1, height: "1px", background: `linear-gradient(to right, ${cfg.color}30, transparent)` }} />
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                      {qbs.map((qb, i) => <QBCard key={qb.name} qb={qb} index={i} />)}
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                {filteredData.map((qb, i) => <QBCard key={qb.name} qb={qb} index={i} />)}
+      <main style={{ maxWidth: 1000, margin: "0 auto", padding: "24px 40px 60px" }}>
+        {view === "rankings" ? (
+          Object.entries(grouped).map(([tier, qbs]) => (
+            <div key={tier} style={{ marginBottom: 32 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12,
+                padding: "0 0 8px 0", borderBottom: `2px solid ${TIER_COLORS[tier]}33` }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: TIER_COLORS[tier],
+                  fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase",
+                  letterSpacing: 1.5 }}>{tier}</span>
+                <span style={{ fontSize: 11, color: "#475569" }}>{qbs.length} QB{qbs.length > 1 ? "s" : ""}</span>
               </div>
-            )}
-          </div>
-        )}
-
-        {view === "stats" && (
-          <div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-              <div>
-                <h2 style={{ fontSize: "16px", fontWeight: 700, color: "#E8EAED", letterSpacing: "-0.01em" }}>Advanced Statistics</h2>
-                <p style={{ fontSize: "11px", color: "#4B5563", fontFamily: "'JetBrains Mono', monospace", marginTop: "2px" }}>
-                  Click any column header to sort · Color-coded by league percentile
-                </p>
-              </div>
-              <div style={{ fontSize: "10px", color: "#4B5563", fontFamily: "'JetBrains Mono', monospace", display: "flex", gap: "12px" }}>
-                <span><span style={{ color: "#2ECC71" }}>●</span> Top 25%</span>
-                <span><span style={{ color: "#7DCEA0" }}>●</span> Above Avg</span>
-                <span><span style={{ color: "#E67E22" }}>●</span> Below Avg</span>
-                <span><span style={{ color: "#E74C3C" }}>●</span> Bottom 25%</span>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {qbs.map((qb) => (
+                  <QBCard key={qb.name} qb={qb} isExpanded={expandedQb === qb.name}
+                    onToggle={() => setExpandedQb(expandedQb === qb.name ? null : qb.name)}
+                    onBadgeClick={setSelectedBadge} />
+                ))}
               </div>
             </div>
-            <StatsTable data={sortedTableData} sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-          </div>
+          ))
+        ) : (
+          <FullGlossary onBadgeClick={setSelectedBadge} />
         )}
-
-        <div style={{
-          marginTop: "48px", paddingTop: "24px",
-          borderTop: "1px solid rgba(255,255,255,0.04)",
-          display: "flex", justifyContent: "space-between",
-          fontSize: "10px", color: "#374151", fontFamily: "'JetBrains Mono', monospace",
-        }}>
-          <span>Data via nflverse · Play-by-play EPA model via nflfastR</span>
-          <span>NFL QB Intelligence — 2025 Season Analysis</span>
-        </div>
       </main>
+
+      <GlossaryModal badge={selectedBadge} onClose={() => setSelectedBadge(null)} />
     </div>
   );
 }

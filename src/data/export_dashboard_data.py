@@ -1,10 +1,5 @@
 """
-Export QB data — Two-pillar rating system.
-  Pillar 1: Individual Quality (65%) — how well is the QB playing?
-  Pillar 2: Impact (35%) — how much does the QB move the needle?
-
-Games-weighted blending with small-sample caps.
-Single-season QBs get confidence penalty.
+Export QB data — Two-pillar rating system with auto-generated descriptions.
 
 Run from project root:
     PYTHONPATH=. python src/data/export_dashboard_data.py
@@ -32,6 +27,180 @@ MIN_GAMES = 10
 MIN_ATTEMPTS = 300
 SINGLE_SEASON_PENALTY = 0.88
 
+# ESPN headshot IDs — mapped from nflverse player names
+# ESPN URL format: https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/{id}.png&w=350&h=254
+ESPN_HEADSHOT_IDS = {
+    "J.Allen": 3918298,
+    "L.Jackson": 3916387,
+    "J.Burrow": 3915511,
+    "J.Love": 4362887,
+    "B.Purdy": 4432577,
+    "D.Maye": 4687890,
+    "M.Stafford": 12483,
+    "J.Goff": 3046779,
+    "J.Hurts": 4040715,
+    "P.Mahomes": 3139477,
+    "D.Prescott": 2577417,
+    "S.Darnold": 3912547,
+    "D.Jones": 4241479,
+    "J.Daniels": 4874977,
+    "B.Mayfield": 3052587,
+    "T.Tagovailoa": 4241478,
+    "J.Herbert": 4038524,
+    "T.Lawrence": 4360310,
+    "B.Nix": 4432169,
+    "C.Stroud": 4432080,
+    "K.Murray": 3917315,
+    "K.Cousins": 14880,
+    "A.Rodgers": 8439,
+    "C.Williams": 4886735,
+    "B.Young": 4429013,
+    "R.Wilson": 14881,
+    "J.Flacco": 11252,
+    "G.Smith": 14874,
+    "G.Minshew": 3916804,
+    "J.Brissett": 2979843,
+    "T.Shough": 4569173,
+    "J.Dart": 4874371,
+    "C.Ward": 4686838,
+    "C.Rush": 3045260,
+    "M.Jones": 4361741,
+    "A.Richardson": 4876676,
+}
+
+
+def get_headshot_url(name):
+    espn_id = ESPN_HEADSHOT_IDS.get(name)
+    if espn_id:
+        return f"https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/{espn_id}.png&w=350&h=254"
+    return None
+
+
+def generate_description(qb):
+    """Generate a natural-language scouting report for a QB based on their stats."""
+    name = qb["name"].split(".")[-1]  # "J.Allen" -> "Allen"
+    full = qb["name"]
+    team = qb["team"]
+    tier = qb["tier"]
+    rating = qb["rating"]
+    rank = qb["rank"]
+
+    parts = []
+
+    # Opening — tier-based
+    if tier == "Elite":
+        parts.append(f"{name} grades out as one of the NFL's elite quarterbacks")
+    elif tier == "Blue Chip":
+        parts.append(f"{name} profiles as a high-end starter in the NFL")
+    elif tier == "Quality Starter":
+        parts.append(f"{name} grades as a solid starting quarterback")
+    else:
+        parts.append(f"{name} profiles below the starting threshold")
+
+    # Primary strength
+    throw_epa = qb.get("throwEpa", 0)
+    cpoe = qb.get("cpoe", 0)
+    prs = qb.get("pressureResilience", 0)
+    hi_lev = qb.get("highLeverageEpa", 0)
+    rush_epa = qb.get("rushEpaPerGame", 0)
+    ypa = qb.get("ypa", 0)
+    sack_rate = qb.get("sackRate", 0)
+    int_rate = float(qb.get("int", 0)) / max(float(qb.get("passYds", 1)), 1) * 100  # rough
+    air_yards = qb.get("avgAirYards", 0)
+
+    strengths = []
+    weaknesses = []
+
+    # Passing efficiency
+    if throw_epa > 0.25:
+        strengths.append("elite passing efficiency")
+    elif throw_epa > 0.18:
+        strengths.append("strong passing efficiency")
+    elif throw_epa < 0.08:
+        weaknesses.append("below-average passing efficiency")
+
+    # Pressure
+    if prs > -0.25:
+        strengths.append("exceptional poise under pressure")
+    elif prs > -0.35:
+        strengths.append("solid play under pressure")
+    elif prs < -0.55:
+        weaknesses.append("significant struggles under pressure")
+    elif prs < -0.45:
+        weaknesses.append("inconsistency under pressure")
+
+    # Rushing
+    if rush_epa > 0.8:
+        strengths.append("game-changing rushing ability")
+    elif rush_epa > 0.3:
+        strengths.append("meaningful contributions as a runner")
+    elif rush_epa < -0.5:
+        weaknesses.append("negative rushing value")
+
+    # Clutch / high leverage
+    if hi_lev > 0.20:
+        strengths.append("dominant play in high-leverage situations")
+    elif hi_lev > 0.12:
+        strengths.append("reliable clutch performance")
+    elif hi_lev < -0.05:
+        weaknesses.append("poor performance in competitive game situations")
+
+    # Air yards / aggression
+    if air_yards > 8.5:
+        strengths.append("elite downfield aggression")
+    elif air_yards < 6.5:
+        weaknesses.append("a conservative approach that limits explosive plays")
+
+    # Accuracy
+    if cpoe > 4.0:
+        strengths.append("outstanding accuracy")
+    elif cpoe < -1.0:
+        weaknesses.append("accuracy concerns")
+
+    # Sack rate
+    if sack_rate > 8.0:
+        weaknesses.append("a high sack rate that limits production")
+
+    # YPA
+    if ypa > 8.0:
+        strengths.append("excellent yards per attempt")
+
+    # Build the description
+    if strengths:
+        strength_str = ", ".join(strengths[:3])
+        parts.append(f", powered by {strength_str}.")
+    else:
+        parts.append(".")
+
+    if weaknesses:
+        weak_str = " and ".join(weaknesses[:2])
+        parts.append(f" The main concerns are {weak_str}.")
+
+    # Context / season note
+    seasons = qb.get("seasons", "2025")
+    wins = qb.get("wins", 0)
+    losses = qb.get("losses", 0)
+    if wins + losses > 0:
+        parts.append(f" Across the {seasons} sample ({wins}-{losses} record),")
+        if throw_epa > 0.15:
+            parts.append(f" he produced a strong +{throw_epa:.3f} EPA per throw")
+        elif throw_epa > 0:
+            parts.append(f" he posted a +{throw_epa:.3f} EPA per throw")
+        else:
+            parts.append(f" he managed just {throw_epa:+.3f} EPA per throw")
+
+        rush_yds = qb.get("rushYds", 0)
+        if rush_yds > 400:
+            parts.append(f" while adding {rush_yds} rushing yards")
+        parts.append(".")
+
+    # Badges mention
+    badges = qb.get("badges", [])
+    if badges:
+        parts.append(f" Tagged as: {', '.join(badges)}.")
+
+    return "".join(parts)
+
 
 def compute_season_stats(df, season_label=""):
     throws = df[(df["sack"] == 0) & (df["qb_scramble"] == 0)].copy()
@@ -44,11 +213,8 @@ def compute_season_stats(df, season_label=""):
     )
     stats["team"] = stats["team"].replace(TEAM_ABBR_FIX)
 
-    # ── All-play EPA (includes sacks — standard) ──
     stats["epa"] = df.groupby("passer_player_id")["epa"].mean()
     stats["total_epa"] = df.groupby("passer_player_id")["epa"].sum()
-
-    # ── Throws-only EPA (excludes sacks/scrambles — isolates passing) ──
     stats["throw_epa"] = throws.groupby("passer_player_id")["epa"].mean()
 
     throw_stats = throws.groupby("passer_player_id").agg(
@@ -63,14 +229,8 @@ def compute_season_stats(df, season_label=""):
 
     cpoe = throws[throws["cpoe"].notna()].groupby("passer_player_id")["cpoe"].mean()
     stats["cpoe"] = cpoe
-
-    # YPA on throws only
     stats["ypa"] = throws.groupby("passer_player_id")["yards_gained"].sum() / throws.groupby("passer_player_id")["play_id"].count()
-
-    # Positive play rate on throws (% of throws with EPA > 0)
-    stats["positive_play_rate"] = throws.groupby("passer_player_id")["epa"].apply(
-        lambda x: (x > 0).mean() * 100
-    )
+    stats["positive_play_rate"] = throws.groupby("passer_player_id")["epa"].apply(lambda x: (x > 0).mean() * 100)
 
     sack_stats = dropbacks.groupby("passer_player_id").agg(
         sacks=("sack", "sum"), total_dropbacks=("play_id", "count"),
@@ -79,17 +239,14 @@ def compute_season_stats(df, season_label=""):
     stats["sack_rate"] = sack_stats["sack_rate"]
 
     stats["avg_air_yards"] = throws.groupby("passer_player_id")["air_yards"].mean()
-    stats["deep_ball_rate"] = throws.groupby("passer_player_id")["air_yards"].apply(
-        lambda x: (x >= 20).mean() * 100
-    )
+    stats["deep_ball_rate"] = throws.groupby("passer_player_id")["air_yards"].apply(lambda x: (x >= 20).mean() * 100)
     stats["int_rate"] = stats["interceptions"] / stats["attempts"].clip(lower=1) * 100
     stats["td_rate"] = stats["pass_td"] / stats["attempts"].clip(lower=1) * 100
 
-    # ── Rushing ──
+    # Rushing
     scrambles = df[df["qb_scramble"] == 1]
     rush = scrambles.groupby("passer_player_id").agg(
-        rush_yds=("yards_gained", "sum"), rush_td=("touchdown", "sum"),
-        scramble_epa=("epa", "sum"),
+        rush_yds=("yards_gained", "sum"), rush_td=("touchdown", "sum"), scramble_epa=("epa", "sum"),
     )
     stats = stats.join(rush, how="left")
     stats["rush_yds"] = stats["rush_yds"].fillna(0).astype(int)
@@ -99,8 +256,7 @@ def compute_season_stats(df, season_label=""):
     stats["designed_rush_epa"] = 0.0
     for season in [2024, 2025]:
         raw_path = RAW_DIR / f"play_by_play_{season}.parquet"
-        if not raw_path.exists():
-            continue
+        if not raw_path.exists(): continue
         raw = pd.read_parquet(raw_path)
         season_qbs = df[df["season"] == season]["passer_player_id"].unique() if "season" in df.columns else stats.index
         qb_rushes = raw[
@@ -120,7 +276,7 @@ def compute_season_stats(df, season_label=""):
     stats["rush_epa_total"] = stats["scramble_epa"] + stats["designed_rush_epa"]
     stats["rush_epa_per_game"] = stats["rush_epa_total"] / stats["games"].clip(lower=1)
 
-    # ── Win % (kept for display, NOT used in rating) ──
+    # Win %
     last_plays = df.sort_values("play_id").groupby(["passer_player_id", "game_id"]).last().reset_index()
     if "score_differential" in last_plays.columns:
         last_plays["won"] = last_plays["score_differential"] > 0
@@ -130,14 +286,14 @@ def compute_season_stats(df, season_label=""):
     else:
         stats["win_pct"] = 50.0; stats["wins"] = 0; stats["losses"] = 0
 
-    # ── High-leverage EPA ──
+    # High-leverage
     if "wp" in df.columns:
         high_lev = df[(df["wp"] >= 0.20) & (df["wp"] <= 0.80)]
         stats["high_leverage_epa"] = high_lev.groupby("passer_player_id")["epa"].mean()
     else:
         stats["high_leverage_epa"] = stats["epa"]
 
-    # ── GWD ──
+    # GWD
     gwd_plays = df[(df["qtr"] >= 4) & (df["score_differential"] <= 0)]
     if "score_differential" in last_plays.columns:
         gwd_game = gwd_plays.groupby(["passer_player_id", "game_id"]).agg(gwd_epa=("epa", "sum")).reset_index()
@@ -150,14 +306,14 @@ def compute_season_stats(df, season_label=""):
     else:
         stats["gwd"] = 0; stats["gwd_epa"] = 0
 
-    # ── Pressure ──
+    # Pressure
     if "was_pressure" in df.columns and df["was_pressure"].notna().any():
         pt = throws[throws["was_pressure"].notna()]
         stats["epa_pressured"] = pt[pt["was_pressure"] == 1].groupby("passer_player_id")["epa"].mean()
         stats["epa_clean"] = pt[pt["was_pressure"] == 0].groupby("passer_player_id")["epa"].mean()
         stats["pressure_resilience"] = stats["epa_pressured"] - stats["epa_clean"]
 
-    # ── Clutch ──
+    # Clutch
     clutch = df[(df["qtr"] == 4) & (df["score_differential"].abs() <= 8)]
     clutch_n = clutch.groupby("passer_player_id")["play_id"].count()
     stats["clutch_epa"] = clutch.groupby("passer_player_id")["epa"].mean()
@@ -174,7 +330,7 @@ def compute_season_stats(df, season_label=""):
 def blend_seasons(stats_2024, stats_2025):
     qual_24 = set(stats_2024[stats_2024["games"] >= MIN_GAMES].index)
     qual_25 = set(stats_2025[stats_2025["games"] >= MIN_GAMES].index)
-    all_qbs = set(qual_25)  # Must have 2025 data
+    all_qbs = set(qual_25)
 
     for qb in qual_24:
         if qb in stats_2025.index:
@@ -193,16 +349,11 @@ def blend_seasons(stats_2024, stats_2025):
         "epa", "throw_epa", "cpoe", "comp_pct", "sack_rate", "avg_air_yards",
         "deep_ball_rate", "int_rate", "td_rate", "neg_play_rate", "success_rate",
         "positive_play_rate", "epa_pressured", "epa_clean", "pressure_resilience",
-        "clutch_epa", "rush_epa_per_game", "win_pct", "high_leverage_epa",
-        "gwd_epa", "ypa",
+        "clutch_epa", "rush_epa_per_game", "win_pct", "high_leverage_epa", "gwd_epa", "ypa",
     ]
-    # For high_leverage_epa, we'll also compute best-season version
-    best_season_cols = ["high_leverage_epa"]
-
     count_cols = [
         "pass_yds", "pass_td", "interceptions", "rush_yds", "rush_td",
-        "total_epa", "attempts", "games", "sacks", "rush_epa_total",
-        "wins", "losses", "gwd",
+        "total_epa", "attempts", "games", "sacks", "rush_epa_total", "wins", "losses", "gwd",
     ]
 
     blended = pd.DataFrame(index=list(all_qbs))
@@ -215,7 +366,6 @@ def blend_seasons(stats_2024, stats_2025):
             blended.loc[qb, "name"] = stats_2024.loc[qb, "name"]
             blended.loc[qb, "team"] = stats_2024.loc[qb, "team"]
 
-    # Per-QB game weights
     for qb in all_qbs:
         g24 = int(stats_2024.loc[qb, "games"]) if qb in stats_2024.index else 0
         g25 = int(stats_2025.loc[qb, "games"]) if qb in stats_2025.index else 0
@@ -223,7 +373,6 @@ def blend_seasons(stats_2024, stats_2025):
         w24 = g24
         total_w = w24 + w25
         if total_w == 0: total_w = 1
-        # Cap small-sample season at 25%
         if g25 > 0 and g25 < 10 and g24 >= 10:
             w25 = min(w25, total_w * 0.25)
             w24 = total_w - w25
@@ -235,7 +384,6 @@ def blend_seasons(stats_2024, stats_2025):
         blended.loc[qb, "_g24"] = g24
         blended.loc[qb, "_g25"] = g25
 
-    # Blend rate stats
     for col in rate_cols:
         for qb in all_qbs:
             has_24 = qb in stats_2024.index and col in stats_2024.columns and pd.notna(stats_2024.loc[qb].get(col))
@@ -251,7 +399,7 @@ def blend_seasons(stats_2024, stats_2025):
             else:
                 blended.loc[qb, col] = np.nan
 
-    # Best-season high-leverage EPA (use peak, not blend)
+    # Best-season high-leverage EPA
     for qb in all_qbs:
         vals = []
         if qb in stats_2024.index and "high_leverage_epa" in stats_2024.columns:
@@ -262,7 +410,6 @@ def blend_seasons(stats_2024, stats_2025):
             if pd.notna(v): vals.append(v)
         blended.loc[qb, "best_high_leverage_epa"] = max(vals) if vals else 0
 
-    # Sum counting stats
     for col in count_cols:
         for qb in all_qbs:
             val = 0
@@ -278,7 +425,6 @@ def blend_seasons(stats_2024, stats_2025):
         if col in blended.columns:
             blended[col] = pd.to_numeric(blended[col], errors="coerce").fillna(0).astype(int)
 
-    # Track seasons
     for qb in all_qbs:
         g24 = int(blended.loc[qb, "_g24"])
         g25 = int(blended.loc[qb, "_g25"])
@@ -290,42 +436,28 @@ def blend_seasons(stats_2024, stats_2025):
 
 
 def compute_composite_rating(stats):
-    """
-    Two-pillar system:
-      PILLAR 1 — Individual Quality (65%): How well is the QB playing?
-        Isolates individual performance from team context.
-      PILLAR 2 — Impact (35%): How much does the QB move the needle?
-        Captures total value including rushing and clutch play.
-    """
-
-    # ── PILLAR 1: Individual Quality (65%) ──
     quality_weights = {
         "throw_epa": 0.12,
-        "positive_play_rate": 0.10,  # Replaces CPOE — scheme-independent
+        "positive_play_rate": 0.10,
         "pressure_resilience": 0.14,
         "ypa": 0.07,
         "avg_air_yards": 0.06,
         "int_rate": -0.06,
         "sack_rate": -0.06,
-        "cpoe": 0.04,               # Kept but minimal
+        "cpoe": 0.04,
     }
-
-    # ── PILLAR 2: Impact (35%) ──
     impact_weights = {
-        "best_high_leverage_epa": 0.12, # Best-season clutch (peak performance)
-        "rush_epa_per_game": 0.10,      # Rushing value per game
-        "total_epa": 0.07,              # Total production volume
-        "gwd_epa": 0.04,                # Game-winning drive ability
-        "td_rate": 0.02,                # Scoring rate
+        "best_high_leverage_epa": 0.12,
+        "rush_epa_per_game": 0.10,
+        "total_epa": 0.07,
+        "gwd_epa": 0.04,
+        "td_rate": 0.02,
     }
-
     all_weights = {**quality_weights, **impact_weights}
 
     scores = pd.DataFrame(index=stats.index)
     for metric, weight in all_weights.items():
-        if metric not in stats.columns:
-            logger.warning(f"  Missing metric: {metric}")
-            continue
+        if metric not in stats.columns: continue
         vals = pd.to_numeric(stats[metric], errors="coerce")
         vals = vals.fillna(vals.median())
         pctile = vals.rank(pct=True)
@@ -335,15 +467,12 @@ def compute_composite_rating(stats):
         scores[metric] = pctile * weight
 
     raw = scores.sum(axis=1)
-
-    # Scale to 40-99
     mn, mx = raw.min(), raw.max()
     if mx > mn:
         scaled = 40 + (raw - mn) / (mx - mn) * 59
     else:
         scaled = pd.Series(70, index=stats.index)
 
-    # Single-season penalty
     if "is_single_season" in stats.columns:
         for qb in stats.index:
             if stats.loc[qb, "is_single_season"] == True:
@@ -385,7 +514,6 @@ def assign_badges(stats):
     for idx, row in stats.iterrows():
         badges = []
         p = {c: pctiles[c].get(idx, 0.5) if idx in pctiles[c].index else 0.5 for c in pctiles}
-
         rush = float(row.get("rush_yds", 0) or 0)
         pyds = float(row.get("pass_yds", 0) or 0)
 
@@ -446,7 +574,6 @@ def export_data():
     logger.info(f"Loaded {len(df):,} total plays")
 
     seasons = sorted(df["season"].unique()) if "season" in df.columns else [2025]
-    logger.info(f"Seasons: {seasons}")
 
     if len(seasons) >= 2 and 2024 in seasons and 2025 in seasons:
         logger.info("Two-pillar blended rating...")
@@ -457,7 +584,6 @@ def export_data():
         stats = compute_season_stats(df, str(seasons[0]))
         stats = stats[stats["games"] >= MIN_GAMES]
         stats["is_single_season"] = True
-        # Create best_high_leverage_epa from the only season
         stats["best_high_leverage_epa"] = stats["high_leverage_epa"]
 
     stats = stats[pd.to_numeric(stats["attempts"], errors="coerce").fillna(0) >= MIN_ATTEMPTS]
@@ -471,7 +597,7 @@ def export_data():
 
     qb_list = []
     for _, row in stats.iterrows():
-        qb_list.append({
+        qb = {
             "rank": int(row["rank"]), "name": row["name"], "team": row["team"],
             "tier": row["tier"], "rating": int(row["rating"]),
             "epa": round(float(row.get("epa") or 0), 3),
@@ -499,7 +625,10 @@ def export_data():
             "negPlayRate": round(float(row.get("neg_play_rate") or 0), 1),
             "badges": row["badges"],
             "seasons": row.get("seasons", "2025"),
-        })
+            "headshotUrl": get_headshot_url(row["name"]),
+        }
+        qb["description"] = generate_description(qb)
+        qb_list.append(qb)
 
     qb_list = clean_nans(qb_list)
 
@@ -512,12 +641,12 @@ def export_data():
     print(f"\n{'='*100}")
     print(f"  QB Intelligence — Two-Pillar Rating (Quality 65% + Impact 35%)")
     print(f"{'='*100}")
-    print(f"{'Rk':<4}{'Name':<20}{'Tm':<5}{'Tier':<18}{'RTG':<5}{'ThwEPA':<9}{'CPOE':<7}{'PrsRes':<8}{'HiLev':<8}{'RshEPA':<8}{'Szn':<10}{'Badges'}")
+    print(f"{'Rk':<4}{'Name':<20}{'Tm':<5}{'Tier':<18}{'RTG':<5}{'ThwEPA':<9}{'PrsRes':<8}{'HiLev':<8}{'RshEPA':<8}{'Badges'}")
     print(f"{'-'*100}")
     for qb in qb_list:
         print(f"{qb['rank']:<4}{qb['name']:<20}{qb['team']:<5}{qb['tier']:<18}{qb['rating']:<5}"
-              f"{qb['throwEpa']:>+.3f}  {qb['cpoe']:>+.1f}  {qb['pressureResilience']:>+.3f}  "
-              f"{qb['highLeverageEpa']:>+.3f}  {qb['rushEpaPerGame']:>+.2f}   {qb['seasons']:<10}"
+              f"{qb['throwEpa']:>+.3f}  {qb['pressureResilience']:>+.3f}  "
+              f"{qb['highLeverageEpa']:>+.003f}  {qb['rushEpaPerGame']:>+.02f}   "
               f"{', '.join(qb['badges'])}")
 
 
