@@ -1,149 +1,161 @@
-# 🏈 NFL QB Intelligence — Play Style Clustering & Decision Analysis
+# NFL QB Intelligence
 
-A data science and ML project analyzing 2025-2026 NFL season quarterback performance through unsupervised clustering, custom performance metrics, and a completion probability model.
+A data-driven quarterback evaluation system that combines play-by-play analytics with a two-pillar composite rating to rank NFL quarterbacks. Built with Python (nflverse data pipeline) and React (interactive dashboard).
 
-![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python)
-![License](https://img.shields.io/badge/License-MIT-green)
-![Status](https://img.shields.io/badge/Status-In%20Development-yellow)
+## Live Dashboard
 
-<!-- TODO: Add dashboard screenshot here -->
-<!-- ![Dashboard Preview](reports/figures/dashboard_preview.png) -->
+Run locally:
 
----
+```bash
+cd dashboard
+npm run dev
+```
 
-## Overview
+Features a card-based rankings view (inspired by The Ringer) and a sortable stats table (inspired by nfelo.com), both with a dark theme and team color accents.
 
-Not all quarterbacks play the same game. This project uses play-by-play data from the 2025-2026 NFL season to:
+## How the Rating Works
 
-1. **Engineer custom QB metrics** — Aggression Index, Pressure Resilience, Clutch Factor, and more
-2. **Cluster QBs by play style** — using UMAP dimensionality reduction and HDBSCAN clustering to discover natural groupings like "Gunslingers," "Game Managers," and "Dual Threats"
-3. **Model completion probability** — an XGBoost model predicting pass completion based on situational features, then measuring which QBs outperform expectations (CPOE)
-4. **Visualize insights** — interactive Streamlit dashboard with radar charts, cluster maps, and KPI cards
+Every QB receives a composite rating from 40–99 built on two pillars:
 
-## Key Metrics & KPIs
+### Pillar 1 — Individual Quality (65%)
 
-| Metric | Description |
-|---|---|
-| **Aggression Index** | Average air yards per attempt, deep ball rate (20+ air yards) |
-| **Pressure Resilience** | EPA differential: under pressure vs. clean pocket |
-| **Decisiveness Score** | Derived from time-to-throw distribution and sack rate |
-| **Clutch Factor** | EPA in high-leverage situations (4th quarter, close games) |
-| **Mobility Score** | Scramble rate, rushing yards on designed pass plays |
-| **CPOE** | Completion Percentage Over Expected — model-derived |
+Isolates the quarterback's performance from team context:
+
+| Metric | Weight | What It Captures |
+|--------|--------|------------------|
+| Throw EPA | 12% | EPA on actual throws, excluding sacks |
+| Pressure Resilience | 14% | EPA under pressure vs. clean pocket |
+| Positive Play Rate | 10% | % of throws producing positive EPA |
+| YPA | 7% | Yards per attempt on throws |
+| Avg Air Yards | 6% | Downfield aggression |
+| CPOE | 4% | Completion % over expected |
+| INT Rate | -6% | Turnover avoidance (lower is better) |
+| Sack Rate | -6% | Ball security / escapability |
+
+### Pillar 2 — Impact (35%)
+
+Captures total value including rushing and clutch performance:
+
+| Metric | Weight | What It Captures |
+|--------|--------|------------------|
+| Best-Season High-Leverage EPA | 12% | Clutch EPA in competitive games (WP 20–80%), using QB's best season |
+| Rush EPA per Game | 10% | Rushing value from scrambles + designed runs |
+| Total EPA | 7% | Cumulative production volume |
+| GWD EPA | 4% | EPA in 4th quarter comeback situations |
+| TD Rate | 2% | Scoring efficiency |
+
+### Design Decisions
+
+**Win % is excluded from the rating.** It's displayed on QB cards but doesn't affect rank. Win % is too team-dependent — it inflates QBs on good rosters and punishes QBs on bad ones regardless of individual play.
+
+**Best-season high-leverage EPA** is used instead of blended. For QBs with an injury-shortened season, the blended average unfairly penalizes their peak performance.
+
+**Pressure resilience is heavily weighted** because it's one of the most QB-specific metrics available. O-line quality, scheme, and receiver separation don't help when the pocket collapses.
+
+## Data Pipeline
+
+### Two-Season Blended Approach
+
+Stats are blended across the 2024 and 2025 NFL seasons using games-weighted averaging with a recency bonus:
+
+- Each season's influence is proportional to games played
+- 2025 games receive a 1.3x recency multiplier
+- If a QB played fewer than 10 games in a season, that season is capped at 25% influence
+- QBs must have 2025 data to be ranked (no retired/cut players)
+- Minimum 300 pass attempts across qualifying seasons
+- Single-season QBs receive a 12% confidence penalty (rating regressed toward league average)
+
+**Example — Jayden Daniels:** 17 games in 2024, 7 in 2025. His elite 2024 gets ~75% weight, preventing a small injury-year sample from tanking his rating.
+
+### Qualifying Filters
+
+| Filter | Threshold |
+|--------|-----------|
+| Games (best season) | ≥ 10 |
+| Combined attempts | ≥ 300 |
+| Must play in 2025 | Yes |
+
+### Tier Assignment
+
+Tiers are percentile-based across qualifying QBs:
+
+| Tier | Percentile | ~Count |
+|------|-----------|--------|
+| Elite | Top 12% | 4–5 QBs |
+| Blue Chip | Top 30% | 5–7 QBs |
+| Quality Starter | Top 65% | 8–10 QBs |
+| Bridge / Backup | Bottom 35% | 10–12 QBs |
+
+### Play Style Badges
+
+Each QB receives 2–3 badges based on percentile thresholds:
+
+**Positive:** Dual Threat, Mobile, Gunslinger, Aggressive, Accurate, Clutch, Composed, Efficient, Dynamic Runner, Consistent, Big Play, Volume
+
+**Negative:** Inaccurate, Turnover Prone, Holds Ball, Conservative, Struggling, Losing Record, Inconsistent
+
+High-rated QBs show positive badges first; low-rated QBs lead with negative badges.
 
 ## Project Structure
 
 ```
 nfl-qb-intelligence/
-├── README.md
-├── requirements.txt
-├── pyproject.toml
-├── .gitignore
-│
 ├── data/
-│   ├── raw/                  # Raw play-by-play and roster data
-│   └── processed/            # Cleaned, feature-engineered datasets
-│
-├── notebooks/
-│   ├── 01_data_exploration.ipynb
-│   ├── 02_feature_engineering.ipynb
-│   ├── 03_clustering_analysis.ipynb
-│   └── 04_completion_probability_model.ipynb
-│
+│   ├── raw/                  # nflverse play-by-play parquet files
+│   └── processed/            # Filtered and qualified pass plays
 ├── src/
-│   ├── __init__.py
-│   ├── data/
-│   │   ├── __init__.py
-│   │   └── load_data.py      # Data acquisition & cleaning pipeline
-│   ├── features/
-│   │   ├── __init__.py
-│   │   └── build_features.py # Feature engineering for QB metrics
-│   ├── models/
-│   │   ├── __init__.py
-│   │   ├── clustering.py     # UMAP + HDBSCAN clustering pipeline
-│   │   └── completion_model.py  # XGBoost completion probability
-│   └── visualization/
-│       ├── __init__.py
-│       └── plots.py          # Reusable plotting functions
-│
-├── app/
-│   └── dashboard.py          # Streamlit dashboard
-│
-├── tests/
-│   ├── __init__.py
-│   ├── test_features.py
-│   └── test_models.py
-│
-└── reports/
-    └── figures/              # Saved plots and dashboard screenshots
+│   └── data/
+│       ├── load_data.py      # Data acquisition (pulls 2024 + 2025 seasons)
+│       └── export_dashboard_data.py  # Stats, ratings, tiers, badges → JSON
+├── dashboard/
+│   ├── src/
+│   │   ├── App.jsx           # React dashboard component
+│   │   └── data/
+│   │       └── qb_data.json  # Exported QB data for the frontend
+│   └── package.json
+├── diagnose_rankings.py      # Diagnostic tool for debugging rankings
+└── README.md
 ```
 
-## Setup & Installation
+## Setup
 
 ### Prerequisites
-- Python 3.11+
-- macOS / Linux / WSL
 
-### Quick Start
+- Python 3.10+ with a virtual environment
+- Node.js 18+
+
+### Installation
 
 ```bash
 # Clone the repo
 git clone https://github.com/alannguyen67/nfl-qb-intelligence.git
 cd nfl-qb-intelligence
 
-# Create virtual environment
+# Python environment
 python -m venv venv
 source venv/bin/activate
+pip install pandas numpy nfl_data_py pyarrow
 
-# Install dependencies
-pip install -r requirements.txt
+# Pull data and export
+PYTHONPATH=. python -m src.data.load_data
+PYTHONPATH=. python src/data/export_dashboard_data.py
 
-# Pull the data
-python -m src.data.load_data
-
-# Run the dashboard
-streamlit run app/dashboard.py
+# Dashboard
+cd dashboard
+npm install
+npm run dev
 ```
 
-## Methodology
+The dashboard will be available at `http://localhost:5173`.
 
-### Data Source
-Play-by-play data sourced via [`nfl_data_py`](https://github.com/cooperdff/nfl_data_py), which wraps the [nflverse](https://github.com/nflverse) data ecosystem — the gold standard for open NFL analytics data.
+## Data Source
 
-### Clustering Approach
-1. Aggregate per-QB features from play-level data
-2. Standardize features (StandardScaler)
-3. Reduce dimensionality with UMAP (2 components for visualization)
-4. Cluster with HDBSCAN (density-based, no need to predefine k)
-5. Label clusters based on centroid feature profiles
-
-### Completion Probability Model
-- **Target:** Binary (complete / incomplete) on individual pass attempts
-- **Features:** Air yards, pass location, pressure, down & distance, score differential, quarter, shotgun/no-huddle
-- **Model:** XGBoost with hyperparameter tuning via Optuna
-- **Evaluation:** AUC-ROC, Brier score, calibration curves
-- **Interpretability:** SHAP values for global and per-prediction explanations
-
-## Results
-
-<!-- TODO: Fill in after analysis -->
-*Coming soon — analysis in progress.*
-
-## Tech Stack
-
-- **Data:** pandas, nfl_data_py, numpy
-- **ML:** scikit-learn, XGBoost, UMAP, HDBSCAN, Optuna
-- **Interpretability:** SHAP
-- **Visualization:** plotly, seaborn, matplotlib
-- **Dashboard:** Streamlit
-- **Dev:** pytest, ruff, GitHub Actions
-
-## License
-
-MIT License — see [LICENSE](LICENSE) for details.
+All play-by-play data comes from [nflverse](https://github.com/nflverse/nflverse-data), the open-source NFL data repository maintained by the nflverse community. Metrics like EPA and CPOE are pre-computed in the nflverse dataset using models developed by Ben Baldwin and Sebastian Carl.
 
 ## Acknowledgments
 
-- [nflverse](https://github.com/nflverse) for the incredible open data ecosystem
-- [nfl_data_py](https://github.com/cooperdff/nfl_data_py) for the Python interface
-- Ben Baldwin's [nflfastR](https://www.nflfastr.com/) for EPA methodology
+Dashboard design inspired by:
+- [The Ringer QB Rankings](https://www.theringer.com) — card-based tier design
+- [nfelo.com](https://nfelo.com/qb-rankings) — dark sortable stats tables
+- [rbsdm.com](https://rbsdm.com) — Ben Baldwin's EPA scatter plots
+- [SumerSports](https://sumersports.com) — clean data filtering
