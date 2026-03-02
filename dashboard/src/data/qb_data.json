@@ -39,44 +39,6 @@
   },
   {
     "rank": 2,
-    "name": "J.Burrow",
-    "team": "CIN",
-    "tier": "Elite",
-    "rating": 99,
-    "epa": 0.137,
-    "throwEpa": 0.282,
-    "cpoe": 6.3,
-    "compPct": 69.7,
-    "passYds": 6727,
-    "passTd": 65,
-    "int": 14,
-    "sackRate": 6.7,
-    "avgAirYards": 7.1,
-    "deepBallRate": 8.7,
-    "rushYds": 23,
-    "rushTd": 1,
-    "rushEpaPerGame": 0.25,
-    "winPct": 47.8,
-    "wins": 12,
-    "losses": 13,
-    "highLeverageEpa": 0.194,
-    "pressureResilience": -0.104,
-    "positivePlayRate": 54.5,
-    "gwd": 1,
-    "ypa": 7.4,
-    "clutchEpa": 0.017,
-    "negPlayRate": 49.2,
-    "badges": [
-      "Accurate",
-      "Composed",
-      "Efficient"
-    ],
-    "seasons": "2024-2025",
-    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/3915511.png&w=350&h=254",
-    "description": "Burrow grades out as one of the NFL's elite quarterbacks, powered by elite passing efficiency, exceptional poise under pressure, reliable clutch performance. Across the 2024-2025 sample (12-13 record), he produced a strong +0.282 EPA per throw. Tagged as: Accurate, Composed, Efficient."
-  },
-  {
-    "rank": 3,
     "name": "J.Allen",
     "team": "BUF",
     "tier": "Elite",
@@ -114,45 +76,45 @@
     "description": "Allen grades out as one of the NFL's elite quarterbacks, powered by elite passing efficiency, solid play under pressure, game-changing rushing ability. Across the 2024-2025 sample (20-12 record), he produced a strong +0.295 EPA per throw. Tagged as: Mobile, Clutch, Efficient."
   },
   {
-    "rank": 4,
-    "name": "B.Purdy",
-    "team": "SF",
+    "rank": 3,
+    "name": "J.Burrow",
+    "team": "CIN",
     "tier": "Elite",
-    "rating": 93,
-    "epa": 0.173,
+    "rating": 99,
+    "epa": 0.137,
     "throwEpa": 0.282,
-    "cpoe": 3.4,
-    "compPct": 67.3,
-    "passYds": 6031,
-    "passTd": 41,
-    "int": 22,
-    "sackRate": 5.8,
-    "avgAirYards": 8.4,
-    "deepBallRate": 11.2,
-    "rushYds": 48,
-    "rushTd": 5,
-    "rushEpaPerGame": 0.7,
-    "winPct": 38.9,
-    "wins": 10,
-    "losses": 14,
-    "highLeverageEpa": 0.151,
-    "pressureResilience": -0.38,
-    "positivePlayRate": 53.7,
-    "gwd": 0,
-    "ypa": 8.3,
-    "clutchEpa": 0.198,
-    "negPlayRate": 49.3,
+    "cpoe": 6.3,
+    "compPct": 69.7,
+    "passYds": 6727,
+    "passTd": 65,
+    "int": 14,
+    "sackRate": 6.7,
+    "avgAirYards": 7.1,
+    "deepBallRate": 8.7,
+    "rushYds": 23,
+    "rushTd": 1,
+    "rushEpaPerGame": 0.25,
+    "winPct": 47.8,
+    "wins": 12,
+    "losses": 13,
+    "highLeverageEpa": 0.194,
+    "pressureResilience": -0.104,
+    "positivePlayRate": 54.5,
+    "gwd": 1,
+    "ypa": 7.4,
+    "clutchEpa": 0.017,
+    "negPlayRate": 49.2,
     "badges": [
-      "Gunslinger",
       "Accurate",
+      "Composed",
       "Efficient"
     ],
     "seasons": "2024-2025",
-    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4432577.png&w=350&h=254",
-    "description": "Purdy grades out as one of the NFL's elite quarterbacks, powered by elite passing efficiency, meaningful contributions as a runner, reliable clutch performance. Across the 2024-2025 sample (10-14 record), he produced a strong +0.282 EPA per throw. Tagged as: Gunslinger, Accurate, Efficient."
+    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/3915511.png&w=350&h=254",
+    "description": "Burrow grades out as one of the NFL's elite quarterbacks, powered by elite passing efficiency, exceptional poise under pressure, reliable clutch performance. Across the 2024-2025 sample (12-13 record), he produced a strong +0.282 EPA per throw. Tagged as: Accurate, Composed, Efficient."
   },
   {
-    "rank": 5,
+    "rank": 4,
     "name": "D.Maye",
     "team": "NE",
     "tier": "Elite",
@@ -186,8 +148,46 @@
       "Clutch"
     ],
     "seasons": "2024-2025",
-    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4687890.png&w=350&h=254",
+    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4431452.png&w=350&h=254",
     "description": "Maye grades out as one of the NFL's elite quarterbacks, powered by elite passing efficiency, exceptional poise under pressure, dominant play in high-leverage situations. The main concerns are negative rushing value and a high sack rate that limits production. Across the 2024-2025 sample (14-16 record), he produced a strong +0.340 EPA per throw. Tagged as: Gunslinger, Accurate, Clutch."
+  },
+  {
+    "rank": 5,
+    "name": "B.Purdy",
+    "team": "SF",
+    "tier": "Elite",
+    "rating": 93,
+    "epa": 0.173,
+    "throwEpa": 0.282,
+    "cpoe": 3.4,
+    "compPct": 67.3,
+    "passYds": 6031,
+    "passTd": 41,
+    "int": 22,
+    "sackRate": 5.8,
+    "avgAirYards": 8.4,
+    "deepBallRate": 11.2,
+    "rushYds": 48,
+    "rushTd": 5,
+    "rushEpaPerGame": 0.7,
+    "winPct": 38.9,
+    "wins": 10,
+    "losses": 14,
+    "highLeverageEpa": 0.151,
+    "pressureResilience": -0.38,
+    "positivePlayRate": 53.7,
+    "gwd": 0,
+    "ypa": 8.3,
+    "clutchEpa": 0.198,
+    "negPlayRate": 49.3,
+    "badges": [
+      "Gunslinger",
+      "Accurate",
+      "Efficient"
+    ],
+    "seasons": "2024-2025",
+    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4361741.png&w=350&h=254",
+    "description": "Purdy grades out as one of the NFL's elite quarterbacks, powered by elite passing efficiency, meaningful contributions as a runner, reliable clutch performance. Across the 2024-2025 sample (10-14 record), he produced a strong +0.282 EPA per throw. Tagged as: Gunslinger, Accurate, Efficient."
   },
   {
     "rank": 6,
@@ -224,7 +224,7 @@
       "Clutch"
     ],
     "seasons": "2024-2025",
-    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4362887.png&w=350&h=254",
+    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4036378.png&w=350&h=254",
     "description": "Love profiles as a high-end starter in the NFL, powered by elite passing efficiency, dominant play in high-leverage situations, elite downfield aggression. The main concerns are significant struggles under pressure. Across the 2024-2025 sample (15-15 record), he produced a strong +0.258 EPA per throw. Tagged as: Gunslinger, Accurate, Clutch."
   },
   {
@@ -337,7 +337,7 @@
       "Dynamic Runner"
     ],
     "seasons": "2024-2025",
-    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4241479.png&w=350&h=254",
+    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/3917792.png&w=350&h=254",
     "description": "Jones profiles as a high-end starter in the NFL, powered by strong passing efficiency, exceptional poise under pressure, game-changing rushing ability. Across the 2024-2025 sample (7-16 record), he produced a strong +0.194 EPA per throw. Tagged as: Composed, Dynamic Runner."
   },
   {
@@ -455,6 +455,44 @@
   },
   {
     "rank": 13,
+    "name": "J.Daniels",
+    "team": "WAS",
+    "tier": "Quality Starter",
+    "rating": 82,
+    "epa": 0.069,
+    "throwEpa": 0.213,
+    "cpoe": 2.0,
+    "compPct": 67.3,
+    "passYds": 4830,
+    "passTd": 33,
+    "int": 12,
+    "sackRate": 8.9,
+    "avgAirYards": 7.4,
+    "deepBallRate": 10.1,
+    "rushYds": 364,
+    "rushTd": 7,
+    "rushEpaPerGame": 0.54,
+    "winPct": 41.6,
+    "wins": 10,
+    "losses": 14,
+    "highLeverageEpa": -0.03,
+    "pressureResilience": -0.194,
+    "positivePlayRate": 49.6,
+    "gwd": 0,
+    "ypa": 7.3,
+    "clutchEpa": 0.298,
+    "negPlayRate": 54.7,
+    "badges": [
+      "Mobile",
+      "Composed",
+      "Dynamic Runner"
+    ],
+    "seasons": "2024-2025",
+    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4426348.png&w=350&h=254",
+    "description": "Daniels grades as a solid starting quarterback, powered by strong passing efficiency, exceptional poise under pressure, meaningful contributions as a runner. The main concerns are a high sack rate that limits production. Across the 2024-2025 sample (10-14 record), he produced a strong +0.213 EPA per throw. Tagged as: Mobile, Composed, Dynamic Runner."
+  },
+  {
+    "rank": 14,
     "name": "B.Mayfield",
     "team": "TB",
     "tier": "Quality Starter",
@@ -492,7 +530,7 @@
     "description": "Mayfield grades as a solid starting quarterback, powered by strong passing efficiency, exceptional poise under pressure, reliable clutch performance. Across the 2024-2025 sample (15-19 record), he produced a strong +0.196 EPA per throw. Tagged as: Composed, Pocket Passer, Volume."
   },
   {
-    "rank": 14,
+    "rank": 15,
     "name": "S.Darnold",
     "team": "SEA",
     "tier": "Quality Starter",
@@ -530,44 +568,6 @@
     "description": "Darnold grades as a solid starting quarterback, powered by strong passing efficiency, reliable clutch performance, outstanding accuracy. The main concerns are inconsistency under pressure. Across the 2024-2025 sample (23-11 record), he produced a strong +0.242 EPA per throw. Tagged as: Accurate, Consistent, Pocket Passer."
   },
   {
-    "rank": 15,
-    "name": "J.Daniels",
-    "team": "WAS",
-    "tier": "Quality Starter",
-    "rating": 82,
-    "epa": 0.069,
-    "throwEpa": 0.213,
-    "cpoe": 2.0,
-    "compPct": 67.3,
-    "passYds": 4830,
-    "passTd": 33,
-    "int": 12,
-    "sackRate": 8.9,
-    "avgAirYards": 7.4,
-    "deepBallRate": 10.1,
-    "rushYds": 364,
-    "rushTd": 7,
-    "rushEpaPerGame": 0.54,
-    "winPct": 41.6,
-    "wins": 10,
-    "losses": 14,
-    "highLeverageEpa": -0.03,
-    "pressureResilience": -0.194,
-    "positivePlayRate": 49.6,
-    "gwd": 0,
-    "ypa": 7.3,
-    "clutchEpa": 0.298,
-    "negPlayRate": 54.7,
-    "badges": [
-      "Mobile",
-      "Composed",
-      "Dynamic Runner"
-    ],
-    "seasons": "2024-2025",
-    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4874977.png&w=350&h=254",
-    "description": "Daniels grades as a solid starting quarterback, powered by strong passing efficiency, exceptional poise under pressure, meaningful contributions as a runner. The main concerns are a high sack rate that limits production. Across the 2024-2025 sample (10-14 record), he produced a strong +0.213 EPA per throw. Tagged as: Mobile, Composed, Dynamic Runner."
-  },
-  {
     "rank": 16,
     "name": "J.Herbert",
     "team": "LAC",
@@ -602,7 +602,7 @@
       "Volume"
     ],
     "seasons": "2024-2025",
-    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4038524.png&w=350&h=254",
+    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4038941.png&w=350&h=254",
     "description": "Herbert grades as a solid starting quarterback, powered by strong passing efficiency, reliable clutch performance. The main concerns are inconsistency under pressure and a high sack rate that limits production. Across the 2024-2025 sample (18-15 record), he produced a strong +0.207 EPA per throw. Tagged as: Aggressive, Pocket Passer, Volume."
   },
   {
@@ -640,7 +640,7 @@
       "Conservative"
     ],
     "seasons": "2024-2025",
-    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4241478.png&w=350&h=254",
+    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4241479.png&w=350&h=254",
     "description": "Tagovailoa grades as a solid starting quarterback, powered by strong passing efficiency. The main concerns are a conservative approach that limits explosive plays. Across the 2024-2025 sample (10-15 record), he produced a strong +0.211 EPA per throw. Tagged as: Pocket Passer, Turnover Prone, Conservative."
   },
   {
@@ -716,7 +716,7 @@
       "Composed"
     ],
     "seasons": "2025",
-    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4569173.png&w=350&h=254",
+    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4360689.png&w=350&h=254",
     "description": "Shough grades as a solid starting quarterback, powered by exceptional poise under pressure. The main concerns are a high sack rate that limits production. Across the 2025 sample (4-7 record), he produced a strong +0.164 EPA per throw. Tagged as: Aggressive, Holds Ball, Composed."
   },
   {
@@ -753,7 +753,7 @@
       "Volume"
     ],
     "seasons": "2024-2025",
-    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4432169.png&w=350&h=254",
+    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4426338.png&w=350&h=254",
     "description": "Nix grades as a solid starting quarterback. Across the 2024-2025 sample (19-15 record), he posted a +0.126 EPA per throw. Tagged as: Pocket Passer, Volume."
   },
   {
@@ -790,7 +790,7 @@
       "Pocket Passer"
     ],
     "seasons": "2024-2025",
-    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4432080.png&w=350&h=254",
+    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4432577.png&w=350&h=254",
     "description": "Stroud grades as a solid starting quarterback, powered by solid play under pressure, reliable clutch performance. Across the 2024-2025 sample (17-14 record), he produced a strong +0.173 EPA per throw. Tagged as: Aggressive, Pocket Passer."
   },
   {
@@ -832,44 +832,6 @@
   },
   {
     "rank": 23,
-    "name": "M.Jones",
-    "team": "SF",
-    "tier": "Quality Starter",
-    "rating": 68,
-    "epa": 0.02,
-    "throwEpa": 0.121,
-    "cpoe": 0.6,
-    "compPct": 66.5,
-    "passYds": 3823,
-    "passTd": 21,
-    "int": 14,
-    "sackRate": 5.1,
-    "avgAirYards": 7.4,
-    "deepBallRate": 9.9,
-    "rushYds": 33,
-    "rushTd": 1,
-    "rushEpaPerGame": 0.14,
-    "winPct": 16.9,
-    "wins": 4,
-    "losses": 14,
-    "highLeverageEpa": 0.205,
-    "pressureResilience": -0.531,
-    "positivePlayRate": 46.4,
-    "gwd": 0,
-    "ypa": 6.7,
-    "clutchEpa": 0.185,
-    "negPlayRate": 55.9,
-    "badges": [
-      "Clutch",
-      "Turnover Prone",
-      "Losing Record"
-    ],
-    "seasons": "2024-2025",
-    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4361741.png&w=350&h=254",
-    "description": "Jones grades as a solid starting quarterback, powered by dominant play in high-leverage situations. The main concerns are inconsistency under pressure. Across the 2024-2025 sample (4-14 record), he posted a +0.121 EPA per throw. Tagged as: Clutch, Turnover Prone, Losing Record."
-  },
-  {
-    "rank": 24,
     "name": "K.Murray",
     "team": "ARI",
     "tier": "Quality Starter",
@@ -905,7 +867,7 @@
     "description": "Murray grades as a solid starting quarterback. The main concerns are inconsistency under pressure. Across the 2024-2025 sample (9-13 record), he produced a strong +0.175 EPA per throw. Tagged as: Conservative."
   },
   {
-    "rank": 25,
+    "rank": 24,
     "name": "J.Brissett",
     "team": "ARI",
     "tier": "Quality Starter",
@@ -938,8 +900,46 @@
       "Losing Record"
     ],
     "seasons": "2024-2025",
-    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/2979843.png&w=350&h=254",
+    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/2578570.png&w=350&h=254",
     "description": "Brissett grades as a solid starting quarterback, powered by solid play under pressure. The main concerns are a high sack rate that limits production. Across the 2024-2025 sample (3-17 record), he posted a +0.113 EPA per throw. Tagged as: Pocket Passer, Losing Record."
+  },
+  {
+    "rank": 25,
+    "name": "M.Jones",
+    "team": "SF",
+    "tier": "Quality Starter",
+    "rating": 68,
+    "epa": 0.02,
+    "throwEpa": 0.121,
+    "cpoe": 0.6,
+    "compPct": 66.5,
+    "passYds": 3823,
+    "passTd": 21,
+    "int": 14,
+    "sackRate": 5.1,
+    "avgAirYards": 7.4,
+    "deepBallRate": 9.9,
+    "rushYds": 33,
+    "rushTd": 1,
+    "rushEpaPerGame": 0.14,
+    "winPct": 16.9,
+    "wins": 4,
+    "losses": 14,
+    "highLeverageEpa": 0.205,
+    "pressureResilience": -0.531,
+    "positivePlayRate": 46.4,
+    "gwd": 0,
+    "ypa": 6.7,
+    "clutchEpa": 0.185,
+    "negPlayRate": 55.9,
+    "badges": [
+      "Clutch",
+      "Turnover Prone",
+      "Losing Record"
+    ],
+    "seasons": "2024-2025",
+    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4241464.png&w=350&h=254",
+    "description": "Jones grades as a solid starting quarterback, powered by dominant play in high-leverage situations. The main concerns are inconsistency under pressure. Across the 2024-2025 sample (4-14 record), he posted a +0.121 EPA per throw. Tagged as: Clutch, Turnover Prone, Losing Record."
   },
   {
     "rank": 26,
@@ -1014,7 +1014,7 @@
       "Inconsistent"
     ],
     "seasons": "2024-2025",
-    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4886735.png&w=350&h=254",
+    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4431611.png&w=350&h=254",
     "description": "Williams profiles below the starting threshold, powered by solid play under pressure. The main concerns are negative rushing value and accuracy concerns. Across the 2024-2025 sample (10-24 record), he posted a +0.135 EPA per throw. Tagged as: Aggressive, Inaccurate, Inconsistent."
   },
   {
@@ -1052,7 +1052,7 @@
       "Inconsistent"
     ],
     "seasons": "2025",
-    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4874371.png&w=350&h=254",
+    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4689114.png&w=350&h=254",
     "description": "Dart profiles below the starting threshold, powered by game-changing rushing ability. The main concerns are poor performance in competitive game situations and a high sack rate that limits production. Across the 2025 sample (5-7 record), he posted a +0.126 EPA per throw. Tagged as: Aggressive, Holds Ball, Inconsistent."
   },
   {
@@ -1090,7 +1090,7 @@
       "Losing Record"
     ],
     "seasons": "2024-2025",
-    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4429013.png&w=350&h=254",
+    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4685720.png&w=350&h=254",
     "description": "Young profiles below the starting threshold, powered by exceptional poise under pressure. The main concerns are below-average passing efficiency. Across the 2024-2025 sample (4-26 record), he posted a +0.073 EPA per throw. Tagged as: Composed, Struggling, Losing Record."
   },
   {
@@ -1166,7 +1166,7 @@
       "Holds Ball"
     ],
     "seasons": "2025",
-    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4686838.png&w=350&h=254",
+    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4688380.png&w=350&h=254",
     "description": "Ward profiles below the starting threshold, powered by solid play under pressure. The main concerns are below-average passing efficiency and poor performance in competitive game situations. Across the 2025 sample (2-15 record), he posted a +0.013 EPA per throw. Tagged as: Pocket Passer, Inaccurate, Holds Ball."
   },
   {
@@ -1318,7 +1318,7 @@
       "Turnover Prone"
     ],
     "seasons": "2024-2025",
-    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/3916804.png&w=350&h=254",
+    "headshotUrl": "https://a.espncdn.com/combiner/i?img=/i/headshots/nfl/players/full/4038524.png&w=350&h=254",
     "description": "Minshew profiles below the starting threshold. The main concerns are below-average passing efficiency and inconsistency under pressure. Across the 2024-2025 sample (1-11 record), he managed just -0.070 EPA per throw. Tagged as: Pocket Passer, Inaccurate, Turnover Prone."
   }
 ]
