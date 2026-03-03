@@ -1,4 +1,23 @@
+# Python
 venv/
-data/raw/
 __pycache__/
+*.pyc
+*.pyo
+
+# Data files (large, regenerable from nflverse)
+data/raw/
+data/processed/
+
+# Node / Dashboard
+dashboard/node_modules/
+dashboard/dist/
+dashboard/.vite/
+
+# OS
 .DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
