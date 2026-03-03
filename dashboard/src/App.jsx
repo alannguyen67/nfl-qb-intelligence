@@ -1,5 +1,6 @@
 import { useState } from "react";
 import qbData from "./data/qb_data.json";
+import AnalyticsLab from "./AnalyticsLab";
 
 // ─── Badge Glossary ───
 const BADGE_GLOSSARY = {
@@ -274,14 +275,14 @@ export default function App() {
           <p style={{ color: "#64748b", fontSize: 13, marginBottom: 20 }}>
             2024–2025 blended · {qbData.length} quarterbacks · Click any QB to expand their profile</p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-            {["rankings", "glossary"].map((v) => (
+            {["rankings", "analytics", "glossary"].map((v) => (
               <button key={v} onClick={() => setView(v)} style={{
                 padding: "6px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600,
                 background: view === v ? "#f59e0b22" : "transparent",
                 color: view === v ? "#f59e0b" : "#64748b",
                 border: view === v ? "1px solid #f59e0b44" : "1px solid transparent",
                 cursor: "pointer", textTransform: "capitalize", fontFamily: "'Outfit', sans-serif",
-              }}>{v === "glossary" ? "Badge Glossary" : v}</button>
+              }}>{v === "glossary" ? "Badge Glossary" : v === "analytics" ? "Analytics Lab" : v}</button>
             ))}
             {view === "rankings" && (
               <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
@@ -301,7 +302,9 @@ export default function App() {
       </header>
 
       <main style={{ maxWidth: 1000, margin: "0 auto", padding: "24px 40px 60px" }}>
-        {view === "rankings" ? (
+        {view === "analytics" ? (
+          <AnalyticsLab />
+        ) : view === "rankings" ? (
           Object.entries(grouped).map(([tier, qbs]) => (
             <div key={tier} style={{ marginBottom: 32 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12,
